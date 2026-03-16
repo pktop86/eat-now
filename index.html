@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="지금뭐먹지">
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services&autoload=false"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9933896132600937" crossorigin="anonymous"></script>
 <meta name="theme-color" content="#FF6B35">
 <title>지금 뭐먹지</title>
@@ -444,21 +444,23 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
  
     <div class="section-title">지금 기분이 어때요? 😊</div>
     <div class="emotion-grid">
-      <div class="emotion-cell" onclick="goQuickEmotion('comfort')"><span class="ee">🤗</span><span class="el">위로 받고 싶어</span></div>
-      <div class="emotion-cell" onclick="goQuickEmotion('stimulate')"><span class="ee">🌶️</span><span class="el">자극적인 거</span></div>
-      <div class="emotion-cell" onclick="goQuickEmotion('light')"><span class="ee">🥗</span><span class="el">가벼운 거</span></div>
-      <div class="emotion-cell" onclick="goQuickEmotion('healthy')"><span class="ee">💪</span><span class="el">건강하게</span></div>
-      <div class="emotion-cell" onclick="goQuickEmotion('hearty')"><span class="ee">😤</span><span class="el">든든하게</span></div>
-      <div class="emotion-cell" onclick="goQuickEmotion('anything')"><span class="ee">🎲</span><span class="el">아무거나</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('happy')"><span class="ee">😄</span><span class="el">신나고 기뻐</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('tired')"><span class="ee">😩</span><span class="el">지치고 피곤해</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('sad')"><span class="ee">😢</span><span class="el">우울하고 슬퍼</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('stress')"><span class="ee">🤯</span><span class="el">스트레스 받아</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('cold')"><span class="ee">🥶</span><span class="el">춥고 으슬으슬</span></div>
+      <div class="emotion-cell" onclick="goQuickRandomNow()"><span class="ee">🎲</span><span class="el">아무거나 바로!</span></div>
     </div>
  
     <div class="section-title">특별한 상황인가요? 🎯</div>
     <div class="sit-scroll">
-      <div class="sit-tag" onclick="goQuickSituation('solo')"><span>🧍</span> 혼밥</div>
       <div class="sit-tag" onclick="goQuickSituation('latenight')"><span>🌙</span> 야식</div>
       <div class="sit-tag" onclick="goQuickSituation('hangover')"><span>🥴</span> 해장</div>
       <div class="sit-tag" onclick="goQuickSituation('diet')"><span>🥦</span> 다이어트</div>
+      <div class="sit-tag" onclick="goQuickSituation('date')"><span>💑</span> 데이트</div>
+      <div class="sit-tag" onclick="goQuickSituation('business')"><span>💼</span> 회식·업무</div>
       <div class="sit-tag" onclick="goQuickSituation('rainy')"><span>☔</span> 비 오는 날</div>
+      <div class="sit-tag" onclick="goQuickSituation('hot')"><span>☀️</span> 더운 날</div>
       <div class="sit-tag tournament" onclick="goTournament()"><span>⚔️</span> 토너먼트</div>
     </div>
  
@@ -605,9 +607,30 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <div class="record-title">식사 기록</div>
         <div class="record-sub">기록하면 더 잘 추천해드려요</div>
       </div>
-      <button class="add-btn" onclick="openAddModal()">+</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="toggleCalView()" id="cal-toggle-btn" style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:16px;">📅</button>
+        <button class="add-btn" onclick="openAddModal()">+</button>
+      </div>
     </div>
-    <div class="week-bar" id="week-bar"></div>
+    <!-- 주간 바 -->
+    <div id="week-view">
+      <div class="week-bar" id="week-bar"></div>
+    </div>
+    <!-- 월간 달력 -->
+    <div id="cal-view" style="display:none;padding:0 14px 8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+        <button onclick="calPrevMonth()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px 8px;color:var(--text);">‹</button>
+        <div id="cal-month-label" style="font-size:15px;font-weight:700;"></div>
+        <button onclick="calNextMonth()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px 8px;color:var(--text);">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:4px;">
+        <div style="font-size:10px;color:var(--text2);">월</div><div style="font-size:10px;color:var(--text2);">화</div>
+        <div style="font-size:10px;color:var(--text2);">수</div><div style="font-size:10px;color:var(--text2);">목</div>
+        <div style="font-size:10px;color:var(--text2);">금</div><div style="font-size:10px;color:#E05959;">토</div>
+        <div style="font-size:10px;color:#5499E0;">일</div>
+      </div>
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;"></div>
+    </div>
     <div class="date-label-row">
       <span class="date-label-text" id="selected-date-label">오늘</span>
       <span class="meal-count-badge" id="meal-count-badge">0끼</span>
@@ -1133,6 +1156,11 @@ function scoreMenu(m, ctx, answers) {
       healthy: m[p.diet]*3+m[p.veg]*2,
       hearty: m[p.full]*3+m[p.protein]*2,
       anything: m[p.popular]*2,
+      happy:   m[p.popular]*2+m[p.comfort]*2,
+      tired:   m[p.comfort]*4+m[p.soupy]*3,
+      sad:     m[p.comfort]*5+m[p.soft]*2,
+      stress:  m[p.stim]*3+m[p.spicy]*2+m[p.comfort]*2,
+      cold:    m[p.cold]*4+m[p.soupy]*4,
     };
     taste += em[answers.emotion]||0;
   }
@@ -1409,7 +1437,35 @@ function acceptFate() { goQuick(); }
  
 function goQuick() { startQuick({}); }
 function goQuickEmotion(emotion) { startQuick({emotion}); }
-function goQuickSituation(sit) { startQuick({situation:sit}); }
+ 
+function goQuickRandomNow() {
+  // 질문 없이 바로 300개 중 랜덤 추천
+  showLoading();
+  setTimeout(()=>{
+    const result = runRecommend({emotion:'anything', hungry:'medium', spicy:'any', soup:null});
+    hideLoading();
+    if(!result) { showToast('잠시 후 다시 시도해주세요.'); return; }
+    state.currentResult = result;
+    state.currentAnswers = {emotion:'anything'};
+    state.history.unshift({ name:result.main.name, emoji:result.main.emoji, date:new Date().toLocaleDateString('ko-KR',{month:'short',day:'numeric'}) });
+    state.history = state.history.slice(0,20);
+    saveState();
+    renderResultScreen(result);
+    showScreen('result-screen');
+  }, 800);
+}
+function goQuickSituation(sit) {
+  const sitMap = {
+    latenight: {situation:'latenight', hungry:'medium'},
+    hangover:  {situation:'hangover', soup:true},
+    diet:      {situation:'diet', hungry:'light'},
+    date:      {situation:'date', solo:false},
+    business:  {situation:'business', solo:false},
+    rainy:     {situation:'rainy', soup:true},
+    hot:       {situation:'hot', soup:false},
+  };
+  startQuick(sitMap[sit] || {situation:sit});
+}
 function goTournament() {
   document.getElementById('t-body').innerHTML=`
     <div class="t-intro">
@@ -1521,19 +1577,27 @@ let currentMenuName = '';
  
 function initKakaoMap() {
   const container = document.getElementById('kakao-map');
-  if (!container || typeof kakao === 'undefined') return;
+  if (!container) return;
+  if (typeof kakao === 'undefined') {
+    console.log('카카오 로딩 중...');
+    return;
+  }
   try {
-    kakaoMap = new kakao.maps.Map(container, {
-      center: new kakao.maps.LatLng(37.5665, 126.9780),
-      level: 4,
+    kakao.maps.load(function() {
+      kakaoMap = new kakao.maps.Map(container, {
+        center: new kakao.maps.LatLng(37.5665, 126.9780),
+        level: 4,
+      });
+      document.getElementById('map-section').style.display = 'block';
     });
-    document.getElementById('map-section').style.display = 'block';
-  } catch(e) {}
+  } catch(e) { console.log('지도 초기화 오류:', e); }
 }
  
 function searchNearby() {
-  if (typeof kakao === 'undefined') {
-    showToast('카카오맵 API 키를 설정해주세요.');
+  if (typeof kakao === 'undefined' || !kakaoMap) {
+    // 지도 재시도
+    initKakaoMap();
+    showToast('지도를 불러오는 중이에요. 잠시 후 다시 눌러주세요.');
     return;
   }
   const btn = document.querySelector('.map-search-btn');
@@ -1676,21 +1740,31 @@ function swapMain(idx) {
 }
  
 function decideMenu() {
-  const name = state.currentResult?.main?.name;
-  if(!name) return;
-  showToast(`${name} 결정! 맛있게 드세요 🎉`);
-  // 식사 기록에 추가 제안
+  const main = state.currentResult?.main;
+  if(!main) return;
+  // 시간 기반 식사 타입 자동 결정
+  const mealType = autoMealType();
+  const mealTypeLabel = {breakfast:'아침',lunch:'점심',dinner:'저녁',late_night:'야식'}[mealType];
+  // 자동으로 식사 기록 저장
+  const newMeal = {
+    id: Date.now(),
+    name: main.name,
+    cat: main.cat,
+    date: todayStr(),
+    type: mealType,
+    sat: null,  // 나중에 평가
+    emoji: main.emoji || '🍽️',
+  };
+  state.meals.unshift(newMeal);
+  saveState();
+  showToast(`${mealTypeLabel} 기록에 "${main.name}" 추가됐어요! 🎉`);
   setTimeout(()=>{
-    const add = confirm(`"${name}"을(를) 오늘 식사 기록에 추가할까요?`);
-    if(add) {
-      state.meals.push({ name, cat:state.currentResult.main.cat, date:todayStr(), type:autoMealType(), sat:3 });
-      saveState();
-      showToast('식사 기록에 추가됐어요!');
-    }
     screenStack.length=0;
     showScreen('home-screen',false);
     switchTab('home');
-  }, 400);
+    // 기록 탭으로 자동 이동해서 평가 유도
+    setTimeout(()=>switchTab('rec'), 1200);
+  }, 800);
 }
  
 function giveFeedback(rating) {
@@ -1876,29 +1950,52 @@ function renderMealList() {
   }
   list.innerHTML = dayMeals.map((meal,idx)=>{
     const ti = MEAL_TYPE_INFO[meal.type]||{e:'🍽️',l:'식사'};
-    const si = SAT_INFO[meal.sat]||SAT_INFO[2];
-    return `<div class="meal-item">
-      <span class="meal-type-emoji">${ti.e}</span>
-      <div class="meal-item-info">
-        <div class="meal-item-name">${meal.name}</div>
-        <div class="meal-item-meta">${ti.l} · ${si.e} ${si.l}</div>
+    const mealId = meal.id || idx;
+    // 평가 버튼 렌더링
+    const satBtns = [
+      {r:3,e:'😋',l:'맛있었어',c:'#28A745'},
+      {r:2,e:'😐',l:'그냥먹었어',c:'#FFC107'},
+      {r:1,e:'😤',l:'괜히먹었어',c:'#DC3545'},
+    ].map(s=>`<button onclick="setMealSat('${mealId}','${meal.date}',${s.r})" style="flex:1;padding:7px 4px;border-radius:8px;border:2px solid ${meal.sat===s.r?s.c:'#E9ECEF'};background:${meal.sat===s.r?s.c+'20':'#F8F9FA'};cursor:pointer;font-size:11px;font-weight:600;color:${meal.sat===s.r?s.c:'#6C757D'};">${s.e} ${s.l}</button>`).join('');
+    const satSection = meal.sat===null
+      ? `<div style="margin-top:8px;"><div style="font-size:11px;color:#ADB5BD;margin-bottom:5px;">어땠어요?</div><div style="display:flex;gap:5px;">${satBtns}</div></div>`
+      : `<div style="margin-top:6px;display:flex;gap:5px;">${satBtns}</div>`;
+    return `<div class="meal-item" style="flex-direction:column;align-items:stretch;gap:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="meal-type-emoji">${meal.emoji||ti.e}</span>
+        <div class="meal-item-info">
+          <div class="meal-item-name">${meal.name}</div>
+          <div class="meal-item-meta">${ti.l}</div>
+        </div>
+        <button class="meal-delete" onclick="deleteMealById('${mealId}')">🗑️</button>
       </div>
-      <button class="meal-delete" onclick="deleteMeal(${idx})">🗑️</button>
+      ${satSection}
     </div>`;
   }).join('');
 }
  
-function deleteMeal(idx) {
-  const dayMeals = state.meals.filter(m=>m.date===state.selectedDate);
-  const targetMeal = dayMeals[idx];
-  if(!targetMeal) return;
-  if(!confirm(`"${targetMeal.name}" 기록을 삭제할까요?`)) return;
-  const globalIdx = state.meals.findIndex(m=>m===targetMeal);
-  if(globalIdx>-1) state.meals.splice(globalIdx,1);
+function setMealSat(mealId, date, sat) {
+  const meal = state.meals.find(m=>(m.id||'').toString()===mealId.toString() || (m.date===date));
+  if(!meal) return;
+  // id로 정확히 찾기
+  const exact = state.meals.find(m=>(m.id||'').toString()===mealId.toString());
+  if(exact) exact.sat = sat;
   saveState();
-  renderRecordScreen();
+  renderMealList();
+  vibrate();
+  showToast(sat===3?'맛있게 드셨군요 😋':sat===2?'그럭저럭이었군요 😐':'다음엔 더 좋은 메뉴로! 😤');
+}
+ 
+function deleteMealById(mealId) {
+  if(!confirm('이 기록을 삭제할까요?')) return;
+  state.meals = state.meals.filter(m=>(m.id||'').toString()!==mealId.toString());
+  saveState();
+  renderMealList();
+  renderWeekBar();
   showToast('삭제됐어요.');
 }
+ 
+// deleteMeal replaced by deleteMealById
  
 // ── 식사 추가 모달 ─────────────────────────────
 function openAddModal() {
@@ -2048,6 +2145,69 @@ function vibrate(ms=40) {
 // ════════════════════════════════════════════════════════════════
 // 초기화
 // ════════════════════════════════════════════════════════════════
+ 
+// ════════════════════════════════════════════════════════════════
+// 달력 뷰
+// ════════════════════════════════════════════════════════════════
+let isCalView = false;
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+ 
+function toggleCalView() {
+  isCalView = !isCalView;
+  document.getElementById('week-view').style.display = isCalView ? 'none' : 'block';
+  document.getElementById('cal-view').style.display = isCalView ? 'block' : 'none';
+  const btn = document.getElementById('cal-toggle-btn');
+  btn.style.background = isCalView ? 'var(--primary)' : 'var(--surface)';
+  btn.style.color = isCalView ? '#fff' : '';
+  if(isCalView) renderCalendar();
+}
+ 
+function calPrevMonth() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calNextMonth() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+ 
+function renderCalendar() {
+  const months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('cal-month-label').textContent=`${calYear}년 ${months[calMonth]}`;
+  const grid=document.getElementById('cal-grid');
+  const today=new Date();
+  const firstDay=new Date(calYear,calMonth,1);
+  let startDow=firstDay.getDay()-1;
+  if(startDow<0) startDow=6;
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  let html='';
+  for(let i=0;i<startDow;i++) html+='<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const dStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    const isSel=state.selectedDate===dStr;
+    const dayMeals=state.meals.filter(m=>m.date===dStr);
+    const dow=(startDow+d-1)%7;
+    const isSat=dow===5, isSun=dow===6;
+    let dotColor='var(--primary)';
+    if(dayMeals.length){
+      const sats=dayMeals.map(m=>m.sat).filter(s=>s!==null&&s!==undefined);
+      if(sats.length){const avg=sats.reduce((a,b)=>a+b,0)/sats.length;dotColor=avg>=2.5?'#28A745':avg>=1.5?'#FFC107':'#DC3545';}
+    }
+    const txtColor=isSel?'#fff':isToday?'var(--primary)':isSat?'#E05959':isSun?'#5499E0':'var(--text)';
+    html+=`<div onclick="calSelectDate('${dStr}')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:13px;font-weight:${isToday?700:400};background:${isSel?'var(--primary)':'transparent'};color:${txtColor};">
+      ${d}
+      ${dayMeals.length?`<div style="width:${Math.min(dayMeals.length,3)*4}px;height:3px;border-radius:2px;background:${isSel?'rgba(255,255,255,0.8)':dotColor};margin-top:1px;"></div>`:'<div style="height:4px;"></div>'}
+    </div>`;
+  }
+  grid.innerHTML=html;
+}
+ 
+function calSelectDate(dStr){
+  state.selectedDate=dStr;
+  renderCalendar();
+  renderMealList();
+  const d=new Date(dStr);
+  const label=dStr===todayStr()?'오늘':`${d.getMonth()+1}월 ${d.getDate()}일`;
+  document.getElementById('selected-date-label').textContent=label;
+  document.getElementById('meal-count-badge').textContent=state.meals.filter(m=>m.date===dStr).length+'끼';
+}
+ 
 function init() {
   loadState();
   if(state.onboarded) {
