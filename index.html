@@ -48,7 +48,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .ob-title{font-size:36px;font-weight:900;color:var(--primary);margin-bottom:12px;}
 .ob-sub{font-size:22px;font-weight:700;color:var(--text);line-height:1.4;margin-bottom:12px;}
 .ob-desc{font-size:15px;color:var(--text2);line-height:1.6;}
-.ob-pref{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px;padding-bottom:120px;}
+.ob-pref{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px;padding-bottom:140px;min-height:0;}
 .ob-pref-title{font-size:24px;font-weight:900;margin-bottom:4px;}
 .ob-pref-sub{font-size:13px;color:var(--text2);margin-bottom:24px;}
 .field-label{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;margin-top:20px;display:flex;align-items:center;gap:6px;}
@@ -64,7 +64,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .exclude-grid{display:flex;flex-wrap:wrap;gap:8px;}
 .exclude-chip{padding:8px 14px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-full);font-size:13px;cursor:pointer;color:var(--text2);}
 .exclude-chip.active{border-color:var(--error);background:#FFF5F5;color:var(--error);font-weight:700;}
-.ob-footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:16px;background:linear-gradient(transparent,var(--surface) 30%);padding-top:40px;}
+.ob-footer{position:sticky;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(transparent,var(--surface) 30%);padding-top:32px;flex-shrink:0;}
 .ob-dots{display:flex;justify-content:center;gap:6px;margin-bottom:16px;}
 .ob-dot{width:8px;height:8px;border-radius:4px;background:var(--border);transition:all .2s;}
 .ob-dot.active{width:24px;background:var(--primary);}
@@ -377,7 +377,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div class="ob-desc">날씨, 시간, 최근 먹은 것까지<br>고려한 맞춤 추천을 드려요.</div>
     <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div></div>
   </div>
-  <div id="ob-slide-2" style="display:none;flex:1;flex-direction:column;">
+  <div id="ob-slide-2" style="display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden;">
     <div class="ob-pref">
       <div class="ob-pref-title">취향을 알려주세요</div>
       <div class="ob-pref-sub">나중에 언제든지 수정할 수 있어요</div>
@@ -1647,7 +1647,6 @@ function acceptFate() { goQuick(); }
  
 function goQuick() { startQuick({}); }
 function goQuickEmotion(emotion) {
-  // 감정 선택 → 예산 질문 1개만 받고 추천
   const emotionDefaults = {
     happy:   {emotion:'happy',   hungry:'medium', spicy:'any',   soup:null},
     tired:   {emotion:'tired',   hungry:'medium', spicy:'mild',  soup:true},
@@ -1656,13 +1655,9 @@ function goQuickEmotion(emotion) {
     cold:    {emotion:'cold',    hungry:'heavy',  spicy:'any',   soup:true},
     anything:{emotion:'anything',hungry:'medium', spicy:'any',   soup:null},
   };
-  const initialAnswers = emotionDefaults[emotion] || {emotion};
-  // 예산 질문만 표시
-  QUESTIONS = [Q_POOL.budget];
-  qStep = 0;
-  qAnswers = Object.assign({}, initialAnswers);
-  renderQuestion();
-  showScreen('quick-screen');
+  // 예산 질문 1개만 표시 후 추천
+  qAnswers = Object.assign({}, emotionDefaults[emotion] || {emotion});
+  startQuick(qAnswers);
 }
  
  
@@ -1806,9 +1801,11 @@ function buildQuestions(initialAnswers) {
     qs.push(Q_POOL.hot_pref);
     qs.push(Q_POOL.budget);
  
+  } else if(initialAnswers.emotion && initialAnswers.emotion !== 'anything') {
+    // 감정 선택 → 예산만
+    qs.push(Q_POOL.budget);
   } else {
-    // 기본 흐름 (카테고리 선택, CTA 버튼)
-    // solo가 이미 설정됐으면 스킵
+    // 기본 흐름
     if(initialAnswers.solo === undefined) qs.push(Q_POOL.solo);
     qs.push(Q_POOL.hungry);
     qs.push(Q_POOL.soup);
@@ -1932,16 +1929,10 @@ function advanceQuestion() {
  
 function doRecommend() {
   showLoading();
-  setTimeout(async ()=>{
-    let result = runRecommend(qAnswers);
-    if(!result) { hideLoading(); showToast('추천할 메뉴를 찾지 못했어요. 다시 시도해주세요.'); goBack(); return; }
- 
-    // 위치 기반 필터 적용 (카카오맵 + 반경 설정 있을 때만)
-    if(typeof kakao !== 'undefined' && kakao.maps && state.prefs.radiusIdx !== undefined) {
-      try { result = await applyLocationFilter(result, qAnswers); } catch(e) {}
-    }
- 
+  setTimeout(()=>{
+    const result = runRecommend(qAnswers);
     hideLoading();
+    if(!result) { showToast('추천할 메뉴를 찾지 못했어요. 다시 시도해주세요.'); goBack(); return; }
     state.currentResult = result;
     state.currentAnswers = {...qAnswers};
     state.history.unshift({ name:result.main.name, emoji:result.main.emoji, date:new Date().toLocaleDateString('ko-KR',{month:'short',day:'numeric'}) });
@@ -1949,7 +1940,7 @@ function doRecommend() {
     saveState();
     renderResultScreen(result);
     showScreen('result-screen');
-  }, 800);
+  }, 900);
 }
  
 function retryRecommend() {
@@ -1983,28 +1974,13 @@ function getDistance(lat1, lng1, lat2, lng2) {
 // 추천 결과 화면
 // ════════════════════════════════════════════════════════════════
 function renderResultScreen(result) {
+  try {
   const m = result.main;
   currentMenuName = m.name;
  
-  // 위치 기반 변경 알림 배지
+  // 위치 배지 (있을 때만)
   const locBadge = document.getElementById('loc-change-badge');
-  if(locBadge) {
-    if(result.locationChanged) {
-      locBadge.style.display = 'block';
-      locBadge.innerHTML = `📍 <b>${result.radiusLabel}</b> 내 "<b>${result.originalMenu}</b>" 식당이 없어서 변경됐어요`;
-    } else if(result.locationVerified) {
-      locBadge.style.display = 'block';
-      locBadge.innerHTML = `✅ <b>${result.radiusLabel}</b> 내에 식당이 있어요!`;
-      locBadge.style.background = '#F0FFF4';
-      locBadge.style.color = '#28A745';
-    } else {
-      locBadge.style.display = 'none';
-    }
-  }
-  // nearbyPlaces가 있으면 지도에 전달
-  if(result.nearbyPlaces) {
-    window._nearbyPlaces = result.nearbyPlaces;
-  }
+  if(locBadge) locBadge.style.display = 'none';
   document.getElementById('r-emoji').textContent = m.emoji;
   document.getElementById('r-name').textContent = m.name;
   document.getElementById('r-category').textContent = m.cat+(m.sub?` · ${m.sub}`:'');
@@ -2039,8 +2015,9 @@ function renderResultScreen(result) {
   document.getElementById('fb-title').textContent = '먹어보셨나요?';
   [1,2,3].forEach(r=>{
     const b = document.getElementById('fb-'+r);
-    b.className='fb-btn';
+    if(b) b.className='fb-btn';
   });
+  } catch(e) { console.error('renderResultScreen error:', e); }
 }
  
 function swapMain(idx) {
@@ -2558,28 +2535,13 @@ function getDistance(lat1, lng1, lat2, lng2) {
 // 추천 결과 화면
 // ════════════════════════════════════════════════════════════════
 function renderResultScreen(result) {
+  try {
   const m = result.main;
   currentMenuName = m.name;
  
-  // 위치 기반 변경 알림 배지
+  // 위치 배지 (있을 때만)
   const locBadge = document.getElementById('loc-change-badge');
-  if(locBadge) {
-    if(result.locationChanged) {
-      locBadge.style.display = 'block';
-      locBadge.innerHTML = `📍 <b>${result.radiusLabel}</b> 내 "<b>${result.originalMenu}</b>" 식당이 없어서 변경됐어요`;
-    } else if(result.locationVerified) {
-      locBadge.style.display = 'block';
-      locBadge.innerHTML = `✅ <b>${result.radiusLabel}</b> 내에 식당이 있어요!`;
-      locBadge.style.background = '#F0FFF4';
-      locBadge.style.color = '#28A745';
-    } else {
-      locBadge.style.display = 'none';
-    }
-  }
-  // nearbyPlaces가 있으면 지도에 전달
-  if(result.nearbyPlaces) {
-    window._nearbyPlaces = result.nearbyPlaces;
-  }
+  if(locBadge) locBadge.style.display = 'none';
   document.getElementById('r-emoji').textContent = m.emoji;
   document.getElementById('r-name').textContent = m.name;
   document.getElementById('r-category').textContent = m.cat+(m.sub?` · ${m.sub}`:'');
@@ -2614,8 +2576,9 @@ function renderResultScreen(result) {
   document.getElementById('fb-title').textContent = '먹어보셨나요?';
   [1,2,3].forEach(r=>{
     const b = document.getElementById('fb-'+r);
-    b.className='fb-btn';
+    if(b) b.className='fb-btn';
   });
+  } catch(e) { console.error('renderResultScreen error:', e); }
 }
  
 function swapMain(idx) {
