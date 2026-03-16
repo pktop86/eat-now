@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="지금뭐먹지">
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services&autoload=false"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9933896132600937" crossorigin="anonymous"></script>
 <meta name="theme-color" content="#FF6B35">
 <title>지금 뭐먹지</title>
@@ -2115,73 +2115,45 @@ function initMainMap(callback) {
   const listEl = document.getElementById('map-place-list');
   if(!container) return;
  
-  // 이미 초기화됨
+  // 이미 지도 있으면 resize만 하고 바로 callback
   if(mapObject) {
-    try { kakao.maps.event.trigger(mapObject,'resize'); } catch(e){}
-    if(callback) callback();
+    setTimeout(function(){
+      try{ mapObject.relayout(); }catch(e){}
+      if(callback) callback();
+    }, 100);
     return;
   }
  
-  // autoload=false 방식: kakao.maps.load 콜백으로 초기화
-  function doLoad() {
-    kakao.maps.load(function(){
+  // kakao SDK 로드 대기
+  let attempts = 0;
+  function tryInit() {
+    attempts++;
+    // kakao, kakao.maps, kakao.maps.Map 모두 체크
+    if(typeof kakao !== 'undefined' && kakao.maps && kakao.maps.Map) {
       try {
         mapObject = new kakao.maps.Map(container, {
           center: new kakao.maps.LatLng(35.1796, 129.0756),
           level: 5
         });
+        // relayout으로 지도 크기 정상화 (핵심!)
         setTimeout(function(){
-          try{ kakao.maps.event.trigger(mapObject,'resize'); }catch(e){}
+          mapObject.relayout();
           if(callback) callback();
-        }, 300);
+        }, 200);
       } catch(e) {
-        console.error('지도 생성 실패:', e.message);
-        if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;color:red;">❌ 지도 생성 실패: '+e.message+'</div>';
+        if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;color:red;">지도 생성 오류: '+e.message+'</div>';
       }
-    });
-  }
- 
-  function tryCreate() {
-    try {
-      if(typeof kakao === 'undefined') return false;
-      if(!kakao.maps) return false;
-      if(!kakao.maps.Map) return false;
-      mapObject = new kakao.maps.Map(container, {
-        center: new kakao.maps.LatLng(35.1796, 129.0756),
-        level: 5
-      });
-      setTimeout(function(){
-        try{ kakao.maps.event.trigger(mapObject,'resize'); }catch(e){}
-        if(callback) callback();
-      }, 300);
-      return true;
-    } catch(e) {
-      console.error('지도 생성 오류:', e.message);
-      return false;
+      return;
     }
+    if(attempts > 20) {
+      if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;">❌ 카카오 SDK 로딩 실패<br><br>'+
+        '<b>developers.kakao.com</b><br>플랫폼 키 → JS SDK 도메인에<br>'+
+        '<b>https://pktop86.github.io</b><br>등록 후 저장 버튼 클릭 필요</div>';
+      return;
+    }
+    setTimeout(tryInit, 300);
   }
- 
-  if(typeof kakao !== 'undefined' && kakao.maps) {
-    doLoad();
-    return;
-  }
- 
-  if(!tryCreate()) {
-    let t = 0;
-    if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px;">⏳ 카카오맵 로딩 중...</div>';
-    const iv = setInterval(function(){
-      t++;
-      if(typeof kakao !== 'undefined' && kakao.maps) {
-        clearInterval(iv);
-        doLoad(); // kakao 로드됐으면 maps.load 방식으로
-        return;
-      }
-      if(t > 15) {
-        clearInterval(iv);
-        if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;">❌ 카카오 SDK 미로딩<br><br>developers.kakao.com<br>→ 플랫폼 키 → JS SDK 도메인<br><b>https://pktop86.github.io</b> 저장 여부 확인</div>';
-      }
-    }, 400);
-  }
+  tryInit();
 }
  
 function onMapRadiusChange(val) {
