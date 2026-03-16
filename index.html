@@ -7,6 +7,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="지금뭐먹지">
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9933896132600937" crossorigin="anonymous"></script>
 <meta name="theme-color" content="#FF6B35">
 <title>지금 뭐먹지</title>
 <style>
@@ -19,7 +21,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .screen.prev{transform:translateX(-30%);}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .pad{padding:0 16px;}
-
+ 
 /* ── 공통 컴포넌트 ─────────────────────────── */
 .btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-size:17px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-primary);}
 .btn-primary:active{opacity:.85;transform:scale(.98);}
@@ -31,13 +33,13 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .back-btn{width:40px;height:40px;border-radius:var(--radius-full);background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
 .safe-top{padding-top:env(safe-area-inset-top,0px);}
 .safe-bottom{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 64px);}
-
+ 
 /* ── 탭바 ─────────────────────────────────── */
 #tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:calc(64px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0px);}
 .tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:11px;font-weight:600;padding-top:8px;}
 .tab-item.active{color:var(--primary);}
 .tab-icon{font-size:22px;line-height:1;}
-
+ 
 /* ── 온보딩 ─────────────────────────────────── */
 #onboarding{background:var(--surface);}
 .ob-slide{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;animation:fadeUp .4s ease;}
@@ -66,7 +68,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .ob-dots{display:flex;justify-content:center;gap:6px;margin-bottom:16px;}
 .ob-dot{width:8px;height:8px;border-radius:4px;background:var(--border);transition:all .2s;}
 .ob-dot.active{width:24px;background:var(--primary);}
-
+ 
 /* ── 홈 ─────────────────────────────────────── */
 #home-screen{padding-bottom:0;}
 .home-header{padding:16px;display:flex;justify-content:space-between;align-items:flex-start;padding-top:calc(16px + env(safe-area-inset-top,0px));}
@@ -106,7 +108,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .history-card .he{font-size:24px;}
 .history-card .hn{font-size:10px;font-weight:600;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .history-card .hd{font-size:9px;color:var(--text3);}
-
+ 
 /* ── 빠른 추천 질문 ──────────────────────────── */
 #quick-screen .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex:1;}
 #quick-screen .progress-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .3s;}
@@ -127,7 +129,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .opt-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .opt-btn.selected .opt-check{background:var(--primary);border-color:var(--primary);color:#fff;}
 .skip-btn{text-align:center;padding:16px;color:var(--text3);font-size:14px;cursor:pointer;background:none;border:none;width:100%;}
-
+ 
 /* ── 추천 결과 ───────────────────────────────── */
 #result-screen .r-header{padding:16px;display:flex;justify-content:space-between;align-items:center;padding-top:calc(16px + env(safe-area-inset-top,0px));}
 #result-screen .r-header-left .sub{font-size:12px;color:var(--text2);}
@@ -173,7 +175,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .fb-btn.selected-bad{border-color:var(--error);background:#FFF5F5;}
 .fb-emoji{font-size:28px;}
 .fb-label{font-size:11px;font-weight:600;color:var(--text2);}
-
+ 
 /* ── 토너먼트 ────────────────────────────────── */
 #tournament-screen{}
 .t-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;padding-top:calc(12px + env(safe-area-inset-top,0px));}
@@ -206,7 +208,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .t-finish-card .fe{font-size:56px;margin-bottom:8px;}
 .t-finish-card .fn{font-size:24px;font-weight:900;}
 .t-finish-card .fr{font-size:13px;color:var(--primary-dark,#C04A1C);margin-top:10px;line-height:1.5;background:var(--primary-bg);border-radius:8px;padding:10px 12px;}
-
+ 
 /* ── 식사기록 ─────────────────────────────────── */
 #record-screen{}
 .record-header{padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));display:flex;justify-content:space-between;align-items:flex-start;}
@@ -236,7 +238,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .empty-title{font-size:18px;font-weight:700;color:var(--text);}
 .empty-desc{font-size:14px;color:var(--text2);}
 .empty-add-btn{display:flex;align-items:center;gap:6px;margin-top:8px;background:var(--primary-bg);border:1px solid var(--primary);color:var(--primary);padding:10px 20px;border-radius:var(--radius-full);font-size:14px;font-weight:700;cursor:pointer;}
-
+ 
 /* ── 식사기록 추가 모달 ───────────────────────── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
 .modal-overlay.hidden{display:none;}
@@ -258,7 +260,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .sat-btn.active-bad{border-color:var(--error);background:#FFF5F5;}
 .sat-emoji{font-size:26px;}
 .sat-label{font-size:11px;font-weight:600;color:var(--text2);}
-
+ 
 /* ── 취향 ─────────────────────────────────────── */
 #pref-screen{}
 .pref-header{padding:16px;display:flex;justify-content:space-between;align-items:flex-start;padding-top:calc(16px + env(safe-area-inset-top,0px));}
@@ -274,34 +276,52 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .slider::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;}
 .toggle-switch input:checked+.slider{background:var(--primary);}
 .toggle-switch input:checked+.slider::before{transform:translateX(22px);}
-
+ 
 /* ── 로딩 ─────────────────────────────────────── */
 .loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.92);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
 .loading-overlay.hidden{display:none;}
 .loading-spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{font-size:16px;font-weight:700;color:var(--text2);}
-
+ 
 /* ── 토스트 ────────────────────────────────────── */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--text);color:#fff;padding:12px 24px;border-radius:var(--radius-full);font-size:14px;font-weight:600;z-index:400;transition:transform .3s;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
-
+ 
 .scrollable-content{overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .pb-tab{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px));}
+ 
+/* ── 카카오맵 ─────────────────────────────────── */
+.map-section{margin:0 16px 12px;}
+.map-title{font-size:16px;font-weight:700;color:var(--COLORS-textPrimary);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.map-title span{font-size:18px;}
+#kakao-map{width:100%;height:260px;border-radius:var(--RADIUS-md);overflow:hidden;border:1px solid var(--COLORS-border);}
+.map-search-btn{width:100%;padding:12px;background:var(--COLORS-surface);border:1.5px solid var(--COLORS-primary);color:var(--COLORS-primary);border-radius:var(--RADIUS-md);font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.map-search-btn:active{background:var(--COLORS-primarySurface);}
+.map-place-list{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
+.map-place-item{background:var(--COLORS-surface);border-radius:var(--RADIUS-sm);border:1px solid var(--COLORS-border);padding:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.map-place-item:active{background:var(--COLORS-primarySurface);}
+.map-place-name{font-size:14px;font-weight:700;color:var(--COLORS-textPrimary);}
+.map-place-addr{font-size:11px;color:var(--COLORS-textSecondary);margin-top:2px;}
+.map-place-dist{font-size:12px;color:var(--COLORS-primary);font-weight:700;white-space:nowrap;flex-shrink:0;}
+.map-loading{text-align:center;padding:40px 0;color:var(--COLORS-textMuted);font-size:14px;}
+/* ── 애드센스 ─────────────────────────────────── */
+.ad-section{margin:0 16px 12px;}
+.ad-label{font-size:10px;color:var(--COLORS-textMuted);text-align:center;margin-bottom:4px;}
 </style>
 </head>
 <body>
 <div id="app">
-
+ 
 <!-- 로딩 -->
 <div class="loading-overlay hidden" id="loading">
   <div class="loading-spinner"></div>
   <div class="loading-text">메뉴 분석 중...</div>
 </div>
-
+ 
 <!-- 토스트 -->
 <div class="toast" id="toast"></div>
-
+ 
 <!-- 식사 추가 모달 -->
 <div class="modal-overlay hidden" id="add-modal">
   <div class="modal-sheet">
@@ -330,7 +350,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     </div>
   </div>
 </div>
-
+ 
 <!-- ═══════════════════════════════════════════════ -->
 <!--  화면 1: 온보딩                               -->
 <!-- ═══════════════════════════════════════════════ -->
@@ -395,7 +415,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <button class="btn-primary" id="ob-next-btn" onclick="obNext()">다음 →</button>
   </div>
 </div>
-
+ 
 <!-- ═══════════════════════════════════════════════ -->
 <!--  화면 2: 홈                                    -->
 <!-- ═══════════════════════════════════════════════ -->
@@ -410,7 +430,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         </div>
       </div>
     </div>
-
+ 
     <button class="home-cta" onclick="goQuick()">
       <div class="cta-left">
         <span class="cta-emoji">🍽️</span>
@@ -421,7 +441,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       </div>
       <div class="cta-arrow">→</div>
     </button>
-
+ 
     <div class="section-title">지금 기분이 어때요? 😊</div>
     <div class="emotion-grid">
       <div class="emotion-cell" onclick="goQuickEmotion('comfort')"><span class="ee">🤗</span><span class="el">위로 받고 싶어</span></div>
@@ -431,7 +451,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       <div class="emotion-cell" onclick="goQuickEmotion('hearty')"><span class="ee">😤</span><span class="el">든든하게</span></div>
       <div class="emotion-cell" onclick="goQuickEmotion('anything')"><span class="ee">🎲</span><span class="el">아무거나</span></div>
     </div>
-
+ 
     <div class="section-title">특별한 상황인가요? 🎯</div>
     <div class="sit-scroll">
       <div class="sit-tag" onclick="goQuickSituation('solo')"><span>🧍</span> 혼밥</div>
@@ -441,7 +461,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       <div class="sit-tag" onclick="goQuickSituation('rainy')"><span>☔</span> 비 오는 날</div>
       <div class="sit-tag tournament" onclick="goTournament()"><span>⚔️</span> 토너먼트</div>
     </div>
-
+ 
     <div id="fate-section">
       <div class="section-title">오늘의 운명 메뉴 🎲</div>
       <div class="fate-card">
@@ -456,14 +476,14 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         </div>
       </div>
     </div>
-
+ 
     <div id="history-section" style="display:none;">
       <div class="section-title">최근 추천 내역 📋</div>
       <div class="history-scroll" id="history-scroll"></div>
     </div>
   </div>
 </div>
-
+ 
 <!-- ═══════════════════════════════════════════════ -->
 <!--  화면 3: 빠른 추천 질문                        -->
 <!-- ═══════════════════════════════════════════════ -->
@@ -484,7 +504,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div style="height:24px;"></div>
   </div>
 </div>
-
+ 
 <!-- ═══════════════════════════════════════════════ -->
 <!--  화면 4: 추천 결과                             -->
 <!-- ═══════════════════════════════════════════════ -->
@@ -523,6 +543,24 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       </div>
       <div id="candidates-container"></div>
     </div>
+    <!-- 카카오맵 섹션 -->
+    <div class="map-section" id="map-section" style="display:none;">
+      <div class="map-title"><span>📍</span> 주변 음식점 찾기</div>
+      <div id="kakao-map"></div>
+      <button class="map-search-btn" onclick="searchNearby()">🔍 현재 위치에서 검색</button>
+      <div class="map-place-list" id="place-list"></div>
+    </div>
+    <!-- 광고 섹션 -->
+    <div class="ad-section">
+      <div class="ad-label">광고</div>
+      <ins class="adsbygoogle"
+           style="display:block;border-radius:12px;overflow:hidden;"
+           data-ad-client="ca-pub-9933896132600937"
+           data-ad-slot="YOUR_AD_SLOT_ID"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
     <div class="feedback-section">
       <div class="fb-title" id="fb-title">먹어보셨나요?</div>
       <div class="fb-row">
@@ -534,7 +572,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div style="height:20px;"></div>
   </div>
 </div>
-
+ 
 <!-- ═══════════════════════════════════════════════ -->
 <!--  화면 5: 토너먼트                              -->
 <!-- ═══════════════════════════════════════════════ -->
@@ -556,7 +594,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     </div>
   </div>
 </div>
-
+ 
 <!-- ═══════════════════════════════════════════════ -->
 <!--  화면 6: 식사 기록 (탭)                       -->
 <!-- ═══════════════════════════════════════════════ -->
@@ -577,7 +615,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div id="meal-list"></div>
   </div>
 </div>
-
+ 
 <!-- ═══════════════════════════════════════════════ -->
 <!--  화면 7: 취향 관리 (탭)                       -->
 <!-- ═══════════════════════════════════════════════ -->
@@ -645,7 +683,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     </div>
   </div>
 </div>
-
+ 
 <!-- 탭바 -->
 <div id="tab-bar">
   <button class="tab-item active" id="tab-home" onclick="switchTab('home')">
@@ -658,9 +696,9 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <span class="tab-icon">👤</span><span>취향</span>
   </button>
 </div>
-
+ 
 </div><!-- #app -->
-
+ 
 <script>
 // ════════════════════════════════════════════════════════════════
 // 300개 메뉴 데이터베이스
@@ -751,7 +789,7 @@ const MENUS = [
 [79,'버거','양식','패스트푸드',1,3,2,4,2,1,3,3,2,4,3,5,4,2,5,4,5,4,5,1,2,3,1,2,3,5,1,2,3,1,4,3],
 [80,'샌드위치','양식','빵류',1,2,2,2,3,1,2,3,1,3,3,5,4,1,4,4,5,4,4,1,2,3,1,2,3,3,2,4,3,2,3,4],
 ];
-
+ 
 // 컬럼 인덱스 (MENUS 배열에서)
 const IDX = {
   id:0,name:1,cat:2,sub:3,
@@ -762,10 +800,10 @@ const IDX = {
   price:24,delivery:25,speed:26,popular:27,dislike:28,regret:29,
   cal:30,protein:31,veg:32,carb:33,diet:34,workout:35
 };
-
+ 
 const PRICE_LABEL = {1:'5,000~8,000원',2:'8,000~12,000원',3:'12,000~18,000원',4:'18,000~30,000원',5:'30,000원 이상'};
 const CAT_EMOJI = {'한식':'🍚','중식':'🥢','일식':'🍣','양식':'🍝','분식':'🥟','패스트푸드':'🍔','건강식':'🥗','카페/브런치':'☕','베트남':'🍜','태국':'🌿','디저트':'🍰','인도':'🍛','아시안':'🍜','하와이안':'🌺','멕시칸':'🌮','한식/분식':'🥟','한식/일식':'🍱','한식/중식':'🥢','음료/카페':'☕','카페':'☕','과일/간식':'🍎','한식/간식':'🍠','영국요리':'🐟','이탈리안':'🍝','중동/터키':'🥙','중동':'🥙','스페인':'🦐'};
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 상태 관리
 // ════════════════════════════════════════════════════════════════
@@ -794,7 +832,7 @@ let state = {
   weatherEmoji: '🌤️',
   weatherInfo: '',
 };
-
+ 
 function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
@@ -805,7 +843,7 @@ function autoMealType() {
   if(h>=15&&h<21) return 'dinner';
   return 'late_night';
 }
-
+ 
 // ── 로컬스토리지 ─────────────────────────────────
 function saveState() {
   try {
@@ -828,21 +866,21 @@ function loadState() {
     state.history = saved.history||[];
   } catch(e){}
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 추천 엔진
 // ════════════════════════════════════════════════════════════════
 function scoreMenu(m, ctx, answers) {
   const p = IDX;
   let score = 50;
-
+ 
   // 상황 점수 (40%)
   let ctx_score = 0;
   const h = ctx.hour;
   if(h>=22||h<4) ctx_score += m[p.latenight]*2.0;
   else if(h>=10&&h<15) ctx_score += m[p.lunch]*1.3;
   else if(h>=17&&h<21) ctx_score += m[p.dinner]*1.3;
-
+ 
   if(ctx.weather==='rainy') { ctx_score += m[p.rainy]*1.8; if(m[p.soupy]>=4) ctx_score+=5; }
   if(ctx.weather==='snowy') ctx_score += m[p.cold]*2.0;
   if(ctx.temp!==undefined) {
@@ -856,7 +894,7 @@ function scoreMenu(m, ctx, answers) {
   else if(answers.solo===false) ctx_score += m[p.group]*1.5;
   if(state.prefs.diet) ctx_score += m[p.diet]*2.0 - m[p.cal]*1.5;
   score += ctx_score * 0.40;
-
+ 
   // 취향 점수 (30%)
   let taste = 0;
   if(answers.spicy==='spicy') taste += m[p.spicy]*2;
@@ -879,12 +917,12 @@ function scoreMenu(m, ctx, answers) {
     taste += em[answers.emotion]||0;
   }
   score += taste * 0.30;
-
+ 
   // 대중성 + 후회 방지 (30%)
   score += m[p.popular]*1.5*0.15*10;
   score += (6-m[p.regret])*2*0.15*10;
   score += m[p.comfort]*0.15*5;
-
+ 
   // 페널티
   const recentMenuNames = state.meals
     .filter(ml=>{ const d=new Date(); d.setDate(d.getDate()-3); return new Date(ml.date)>=d; })
@@ -895,20 +933,23 @@ function scoreMenu(m, ctx, answers) {
     .map(ml=>ml.cat);
   if(recentCats.includes(m[p.cat])) score -= 15;
   if(m[p.dislike]>=4) score -= 10;
-
-  // 예산
-  if(m[p.price] > (state.prefs.budget+1)) score -= 30;
-
+ 
+  // 예산 (질문 답변 우선, 없으면 취향 설정값)
+  const budgetLimit = answers.budget || state.prefs.budget || 2;
+  if(budgetLimit === 1 && m[p.price] >= 2) score -= 60;  // 1만원 이하 선택 → 2단계+ 강력 제외
+  else if(budgetLimit === 2 && m[p.price] >= 4) score -= 60;  // 1~2만원 선택 → 4단계+ 강력 제외
+  else if(budgetLimit === 1 && m[p.price] === 2) score -= 30; // 경계값 약한 페널티
+ 
   // 금기
   const excl = state.prefs.excluded||[];
   const mText = (m[p.name]+(m[p.cat]||'')).toLowerCase();
   for(const e of excl) {
     if(mText.includes(e.replace('(글루텐)','').toLowerCase())) { score = -999; break; }
   }
-
+ 
   return Math.max(0, Math.min(100, Math.round(score*10)/10));
 }
-
+ 
 function generateReason(m, ctx, answers) {
   const n = m[IDX.name];
   const h = ctx.hour;
@@ -925,7 +966,7 @@ function generateReason(m, ctx, answers) {
   if(answers.hungry==='light' && m[IDX.light]>=4) return `부담 없이 가볍게 즐길 수 있는 ${n}이에요.`;
   return `지금 상황과 취향을 분석한 결과, ${n}이 가장 후회 없는 선택이에요.`;
 }
-
+ 
 function generateTags(m, ctx, answers) {
   const t = [];
   t.push(m[IDX.cat]);
@@ -941,7 +982,7 @@ function generateTags(m, ctx, answers) {
   if(m[IDX.price]<=2) t.push('가성비');
   return t.slice(0,5);
 }
-
+ 
 function runRecommend(answers) {
   const now = new Date();
   const ctx = {
@@ -952,15 +993,15 @@ function runRecommend(answers) {
   };
   if(answers.situation==='latenight') ctx.hour = 23;
   if(answers.situation==='rainy') ctx.weather='rainy';
-
+ 
   const scored = MENUS.map(m=>{
     const s = scoreMenu(m, ctx, answers);
     return { m, s };
   }).filter(x=>x.s>0).sort((a,b)=>b.s-a.s);
-
+ 
   const top = scored.slice(0,5);
   if(!top.length) return null;
-
+ 
   const makeItem = ({m,s}) => ({
     id: m[IDX.id],
     name: m[IDX.name],
@@ -972,42 +1013,42 @@ function runRecommend(answers) {
     tags: generateTags(m, ctx, answers),
     emoji: CAT_EMOJI[m[IDX.cat]]||'🍽️',
   });
-
+ 
   return { main: makeItem(top[0]), candidates: top.slice(1,4).map(makeItem) };
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 화면 전환
 // ════════════════════════════════════════════════════════════════
 const screenStack = [];
-
+ 
 function showScreen(id, push=true) {
   const all = document.querySelectorAll('.screen');
   const target = document.getElementById(id);
   if(!target) return;
-
+ 
   if(push && state.currentScreen !== id) screenStack.push(state.currentScreen);
-
+ 
   const isTab = ['home-screen','record-screen','pref-screen'].includes(id);
   const tabBar = document.getElementById('tab-bar');
-
+ 
   all.forEach(s=>{
     if(s.id===id){ s.classList.add('active'); s.classList.remove('prev'); }
     else if(s.classList.contains('active')){ s.classList.remove('active'); if(!isTab) s.classList.add('prev'); }
     else { s.classList.remove('prev'); }
   });
   state.currentScreen = id;
-
+ 
   if(tabBar) tabBar.style.display = isTab?'flex':'none';
 }
-
+ 
 function goBack() {
   if(screenStack.length>0) {
     const prev = screenStack.pop();
     showScreen(prev, false);
   }
 }
-
+ 
 function switchTab(tab) {
   const map = {home:'home-screen', record:'record-screen', pref:'pref-screen'};
   ['tab-home','tab-record','tab-pref'].forEach(t=>{
@@ -1019,7 +1060,7 @@ function switchTab(tab) {
   if(tab==='pref') syncPrefScreen();
   showScreen(map[tab], false);
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 온보딩
 // ════════════════════════════════════════════════════════════════
@@ -1035,7 +1076,7 @@ function obNext() {
     finishOnboarding();
   }
 }
-
+ 
 function finishOnboarding() {
   saveState();
   state.onboarded = true;
@@ -1043,7 +1084,7 @@ function finishOnboarding() {
   showScreen('home-screen', false);
   document.getElementById('tab-bar').style.display='flex';
 }
-
+ 
 function selectSpicy(el) {
   document.querySelectorAll('#onboarding .spicy-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
@@ -1075,7 +1116,7 @@ function toggleExclude(el) {
     state.prefs.excluded = state.prefs.excluded.filter(e=>e!==name);
   }
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 홈 화면
 // ════════════════════════════════════════════════════════════════
@@ -1085,7 +1126,7 @@ function initHomeScreen() {
   const h = now.getHours();
   const greet = h<6?'새벽이에요':h<11?'좋은 아침이에요':h<14?'점심 시간이에요':h<18?'오후에요':h<22?'저녁이에요':'야심한 밤이에요';
   document.getElementById('weather-info').textContent = greet+' · 메뉴 추천 준비 완료!';
-
+ 
   // 운명 메뉴
   const FATE = [
     {name:'된장찌개',emoji:'🍲',msg:'비 온 뒤 땅이 굳듯, 오늘은 된장이 정답이에요'},
@@ -1101,12 +1142,12 @@ function initHomeScreen() {
   document.getElementById('fate-emoji').textContent = fate.emoji;
   document.getElementById('fate-name').textContent = fate.name;
   document.getElementById('fate-msg').textContent = fate.msg;
-
+ 
   renderHistoryRow();
   // 날씨 API (실패해도 무방)
   getWeather();
 }
-
+ 
 async function getWeather() {
   try {
     if(!navigator.geolocation) return;
@@ -1127,7 +1168,7 @@ async function getWeather() {
     });
   } catch(e){}
 }
-
+ 
 function renderHistoryRow() {
   if(!state.history.length) return;
   document.getElementById('history-section').style.display='block';
@@ -1140,10 +1181,10 @@ function renderHistoryRow() {
     </div>
   `).join('');
 }
-
+ 
 function dismissFate() { document.getElementById('fate-section').style.display='none'; }
 function acceptFate() { goQuick(); }
-
+ 
 function goQuick() { startQuick({}); }
 function goQuickEmotion(emotion) { startQuick({emotion}); }
 function goQuickSituation(sit) { startQuick({situation:sit}); }
@@ -1159,7 +1200,7 @@ function goTournament() {
   document.getElementById('t-dots').innerHTML='';
   showScreen('tournament-screen');
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 빠른 추천 질문
 // ════════════════════════════════════════════════════════════════
@@ -1175,17 +1216,17 @@ const QUESTIONS = [
   { id:'budget', text:'예산은요?', sub:'가격대에 맞춰 추천드려요',
     opts:[{e:'💰',l:'1만원 이하',d:'가성비 한 끼',v:1},{e:'💳',l:'1~2만원',d:'적당한 가격',v:2},{e:'✨',l:'상관없어',d:'제한 없음',v:3}], skip:true},
 ];
-
+ 
 let qStep = 0;
 let qAnswers = {};
-
+ 
 function startQuick(initialAnswers) {
   qStep = 0;
   qAnswers = Object.assign({}, initialAnswers);
   renderQuestion();
   showScreen('quick-screen');
 }
-
+ 
 function renderQuestion() {
   const q = QUESTIONS[qStep];
   const pct = ((qStep+1)/QUESTIONS.length*100)+'%';
@@ -1195,7 +1236,7 @@ function renderQuestion() {
   document.getElementById('q-text').textContent = q.text;
   document.getElementById('q-sub').textContent = q.sub||'';
   document.getElementById('skip-btn').style.display = q.skip?'block':'none';
-
+ 
   const container = document.getElementById('opts-container');
   container.innerHTML = q.opts.map((opt,idx)=>`
     <button class="opt-btn${qAnswers[q.id]===opt.v?' selected':''}" onclick="selectOptIdx(${idx})">
@@ -1208,21 +1249,21 @@ function renderQuestion() {
     </button>
   `).join('');
 }
-
+ 
 function selectOptIdx(idx) {
   const q = QUESTIONS[qStep];
   selectOpt(q.opts[idx].v);
 }
-
+ 
 function selectOpt(val) {
   const q = QUESTIONS[qStep];
   qAnswers[q.id] = val;
   renderQuestion();
   setTimeout(()=>advanceQuestion(), 180);
 }
-
+ 
 function skipQuestion() { advanceQuestion(); }
-
+ 
 function advanceQuestion() {
   if(qStep < QUESTIONS.length-1) {
     qStep++;
@@ -1231,7 +1272,7 @@ function advanceQuestion() {
     doRecommend();
   }
 }
-
+ 
 function doRecommend() {
   showLoading();
   setTimeout(()=>{
@@ -1248,14 +1289,117 @@ function doRecommend() {
     showScreen('result-screen');
   }, 1200);
 }
-
+ 
 function retryRecommend() { goBack(); }
-
+// ════════════════════════════════════════════════════════════════
+// 카카오맵
+// ════════════════════════════════════════════════════════════════
+let kakaoMap = null;
+let currentMenuName = '';
+ 
+function initKakaoMap() {
+  const container = document.getElementById('kakao-map');
+  if (!container || typeof kakao === 'undefined') return;
+  try {
+    kakaoMap = new kakao.maps.Map(container, {
+      center: new kakao.maps.LatLng(37.5665, 126.9780),
+      level: 4,
+    });
+    document.getElementById('map-section').style.display = 'block';
+  } catch(e) {}
+}
+ 
+function searchNearby() {
+  if (typeof kakao === 'undefined') {
+    showToast('카카오맵 API 키를 설정해주세요.');
+    return;
+  }
+  const btn = document.querySelector('.map-search-btn');
+  btn.textContent = '📍 위치 확인 중...';
+  btn.disabled = true;
+ 
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const center = new kakao.maps.LatLng(lat, lng);
+      kakaoMap.setCenter(center);
+ 
+      // 현재 위치 마커
+      new kakao.maps.Marker({ map: kakaoMap, position: center,
+        title: '현재 위치', image: new kakao.maps.MarkerImage(
+          'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+          new kakao.maps.Size(24, 35)) });
+ 
+      // 장소 검색
+      const ps = new kakao.maps.services.Places();
+      const keyword = currentMenuName || '음식점';
+      ps.keywordSearch(keyword, (data, status) => {
+        btn.textContent = '🔍 현재 위치에서 검색';
+        btn.disabled = false;
+        if (status !== kakao.maps.services.Status.OK) {
+          showToast('주변 음식점을 찾지 못했어요.');
+          return;
+        }
+        const list = document.getElementById('place-list');
+        list.innerHTML = '';
+        const bounds = new kakao.maps.LatLngBounds();
+ 
+        data.slice(0, 5).forEach((place, i) => {
+          const pos = new kakao.maps.LatLng(place.y, place.x);
+          bounds.extend(pos);
+          // 마커
+          const marker = new kakao.maps.Marker({ map: kakaoMap, position: pos, title: place.place_name });
+          const iw = new kakao.maps.InfoWindow({ content: `<div style="padding:5px;font-size:12px;white-space:nowrap;">${place.place_name}</div>` });
+          kakao.maps.event.addListener(marker, 'click', () => iw.open(kakaoMap, marker));
+ 
+          // 거리 계산
+          const dist = Math.round(getDistance(lat, lng, place.y, place.x));
+          const distText = dist >= 1000 ? (dist/1000).toFixed(1)+'km' : dist+'m';
+ 
+          // 리스트 아이템
+          const item = document.createElement('div');
+          item.className = 'map-place-item';
+          item.innerHTML = `
+            <div>
+              <div class="map-place-name">${place.place_name}</div>
+              <div class="map-place-addr">${place.road_address_name || place.address_name}</div>
+            </div>
+            <div class="map-place-dist">${distText}</div>`;
+          item.onclick = () => {
+            kakaoMap.setCenter(pos);
+            kakaoMap.setLevel(3);
+            iw.open(kakaoMap, marker);
+          };
+          list.appendChild(item);
+        });
+        kakaoMap.setBounds(bounds);
+        showToast(`${keyword} 근처 식당 ${data.slice(0,5).length}곳 찾았어요!`);
+      }, { location: center, radius: 1000, sort: kakao.maps.services.SortBy.DISTANCE });
+    },
+    () => {
+      btn.textContent = '🔍 현재 위치에서 검색';
+      btn.disabled = false;
+      showToast('위치 권한을 허용해주세요.');
+    }
+  );
+}
+ 
+function getDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+ 
+ 
 // ════════════════════════════════════════════════════════════════
 // 추천 결과 화면
 // ════════════════════════════════════════════════════════════════
 function renderResultScreen(result) {
   const m = result.main;
+  currentMenuName = m.name;
   document.getElementById('r-emoji').textContent = m.emoji;
   document.getElementById('r-name').textContent = m.name;
   document.getElementById('r-category').textContent = m.cat+(m.sub?` · ${m.sub}`:'');
@@ -1263,7 +1407,7 @@ function renderResultScreen(result) {
   document.getElementById('r-price').textContent = m.price;
   document.getElementById('r-score').textContent = Math.round(m.score)+'점';
   document.getElementById('r-tags').innerHTML = m.tags.map(t=>`<span class="tag-chip">#${t}</span>`).join('');
-
+ 
   // 후보
   const cc = document.getElementById('candidates-container');
   cc.innerHTML = result.candidates.map((c,i)=>`
@@ -1279,7 +1423,9 @@ function renderResultScreen(result) {
       <span>›</span>
     </div>
   `).join('');
-
+ 
+  // 지도 초기화
+  setTimeout(()=>{ if(typeof kakao!=='undefined') initKakaoMap(); }, 500);
   // 피드백 초기화
   document.getElementById('fb-title').textContent = '먹어보셨나요?';
   [1,2,3].forEach(r=>{
@@ -1287,7 +1433,7 @@ function renderResultScreen(result) {
     b.className='fb-btn';
   });
 }
-
+ 
 function swapMain(idx) {
   const r = state.currentResult;
   const old = r.main;
@@ -1297,7 +1443,7 @@ function swapMain(idx) {
   renderResultScreen(r);
   showToast('메인 메뉴가 변경됐어요!');
 }
-
+ 
 function decideMenu() {
   const name = state.currentResult?.main?.name;
   if(!name) return;
@@ -1315,7 +1461,7 @@ function decideMenu() {
     switchTab('home');
   }, 400);
 }
-
+ 
 function giveFeedback(rating) {
   const classes = {3:'selected-good', 2:'selected-neutral', 1:'selected-bad'};
   [1,2,3].forEach(r=>document.getElementById('fb-'+r).className='fb-btn');
@@ -1328,7 +1474,7 @@ function giveFeedback(rating) {
   saveState();
   vibrate();
 }
-
+ 
 function shareResult() {
   const m = state.currentResult?.main;
   if(!m) return;
@@ -1339,7 +1485,7 @@ function shareResult() {
     navigator.clipboard?.writeText(text).then(()=>showToast('클립보드에 복사됐어요!'));
   }
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 토너먼트
 // ════════════════════════════════════════════════════════════════
@@ -1350,7 +1496,7 @@ function startTournament() {
   const ctx = { hour:now.getHours(), weather:'sunny' };
   const scored = MENUS.map(m=>({m,s:scoreMenu(m,ctx,{hungry:'medium',spicy:'any',soup:null})}))
     .filter(x=>x.s>10).sort((a,b)=>b.s-a.s).slice(0,8);
-
+ 
   if(scored.length<2) { showToast('메뉴가 부족해요.'); return; }
   state.tCandidates = scored.map(x=>x.m);
   state.tRound = 1;
@@ -1358,7 +1504,7 @@ function startTournament() {
   state.tWinnersAll = [];
   renderTournamentRound();
 }
-
+ 
 function renderTournamentRound() {
   if(state.tCandidates.length===1) {
     const winner = state.tCandidates[0];
@@ -1380,18 +1526,18 @@ function renderTournamentRound() {
     vibrate(200);
     return;
   }
-
+ 
   // 다음 매치업
   const left = state.tCandidates[0];
   const right = state.tCandidates[1];
   const le = CAT_EMOJI[left[IDX.cat]]||'🍽️';
   const re = CAT_EMOJI[right[IDX.cat]]||'🍽️';
-
+ 
   // 진행 도트
   document.getElementById('t-round-label').textContent=`ROUND ${state.tRound}`;
   const dots = document.getElementById('t-dots');
   dots.innerHTML=Array.from({length:state.tTotal},(_, i)=>`<div class="t-dot${i<state.tRound?' done':''}"></div>`).join('');
-
+ 
   document.getElementById('t-body').innerHTML=`
     <div class="t-instruction">어떤 게 더 당겨요?</div>
     <div class="t-vs-row">
@@ -1410,15 +1556,15 @@ function renderTournamentRound() {
       </div>
     </div>`;
 }
-
+ 
 function pickTournament(side) {
   const winner = side==='left'? state.tCandidates[0] : state.tCandidates[1];
   const loser  = side==='left'? state.tCandidates[1] : state.tCandidates[0];
-
+ 
   // 승자 카드 애니메이션
   document.getElementById('tc-'+side)?.classList.add('winner');
   document.getElementById(side==='left'?'tc-right':'tc-left')?.classList.add('loser');
-
+ 
   setTimeout(()=>{
     // 패자 제거, 승자 맨 뒤로
     state.tCandidates = state.tCandidates.filter((_,i)=>i>1);
@@ -1428,13 +1574,13 @@ function pickTournament(side) {
   }, 500);
   vibrate();
 }
-
+ 
 function goHomeFromTournament() {
   screenStack.length=0;
   showScreen('home-screen',false);
   switchTab('home');
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 식사 기록
 // ════════════════════════════════════════════════════════════════
@@ -1443,12 +1589,12 @@ const MEAL_TYPE_INFO = {
   dinner:{e:'🌙',l:'저녁'}, late_night:{e:'🦉',l:'야식'}
 };
 const SAT_INFO = {3:{e:'😋',l:'맛있었어',c:'good'}, 2:{e:'😐',l:'그냥먹었어',c:'neutral'}, 1:{e:'😤',l:'괜히먹었어',c:'bad'}};
-
+ 
 function renderRecordScreen() {
   renderWeekBar();
   renderMealList();
 }
-
+ 
 function renderWeekBar() {
   const today = new Date();
   const monday = new Date(today);
@@ -1468,13 +1614,13 @@ function renderWeekBar() {
     </div>`;
   }).join('');
 }
-
+ 
 function selectDate(dStr) {
   state.selectedDate = dStr;
   renderWeekBar();
   renderMealList();
 }
-
+ 
 function renderMealList() {
   const today = todayStr();
   const isToday = state.selectedDate===today;
@@ -1483,10 +1629,10 @@ function renderMealList() {
     return `${d.getMonth()+1}월 ${d.getDate()}일`;
   })();
   document.getElementById('selected-date-label').textContent = label;
-
+ 
   const dayMeals = state.meals.filter(m=>m.date===state.selectedDate);
   document.getElementById('meal-count-badge').textContent = dayMeals.length+'끼';
-
+ 
   const list = document.getElementById('meal-list');
   if(!dayMeals.length) {
     list.innerHTML=`<div class="empty-state">
@@ -1510,7 +1656,7 @@ function renderMealList() {
     </div>`;
   }).join('');
 }
-
+ 
 function deleteMeal(idx) {
   const dayMeals = state.meals.filter(m=>m.date===state.selectedDate);
   const targetMeal = dayMeals[idx];
@@ -1522,7 +1668,7 @@ function deleteMeal(idx) {
   renderRecordScreen();
   showToast('삭제됐어요.');
 }
-
+ 
 // ── 식사 추가 모달 ─────────────────────────────
 function openAddModal() {
   document.getElementById('meal-name-input').value='';
@@ -1538,12 +1684,12 @@ function openAddModal() {
   document.getElementById('add-modal').classList.remove('hidden');
   setTimeout(()=>document.getElementById('meal-name-input').focus(), 200);
 }
-
+ 
 function closeAddModal() {
   document.getElementById('add-modal').classList.add('hidden');
   document.getElementById('meal-suggestions').style.display='none';
 }
-
+ 
 function onMealNameInput(val) {
   const sug = document.getElementById('meal-suggestions');
   if(val.length<2) { sug.style.display='none'; return; }
@@ -1552,25 +1698,25 @@ function onMealNameInput(val) {
   sug.style.display='block';
   sug.innerHTML = matches.map(m=>`<div class="suggestion-item" onclick="pickSuggestion('${m[IDX.name]}')">${m[IDX.name]} <span style="font-size:11px;color:var(--text3);">${m[IDX.cat]}</span></div>`).join('');
 }
-
+ 
 function pickSuggestion(name) {
   document.getElementById('meal-name-input').value = name;
   document.getElementById('meal-suggestions').style.display='none';
 }
-
+ 
 function selectMealType(el) {
   document.querySelectorAll('#meal-type-btns .toggle-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   state.addModalMealType = el.dataset.val;
 }
-
+ 
 function selectSat(r) {
   [1,2,3].forEach(n=>{ document.getElementById('sat-'+n).className='sat-btn'; });
   const cls = r===3?'active-good':r===2?'active-neutral':'active-bad';
   document.getElementById('sat-'+r).className='sat-btn '+cls;
   state.addModalSat = r;
 }
-
+ 
 function saveNewMeal() {
   const name = document.getElementById('meal-name-input').value.trim();
   if(!name) { showToast('메뉴 이름을 입력해주세요.'); return; }
@@ -1587,7 +1733,7 @@ function saveNewMeal() {
   vibrate();
   showToast('식사 기록이 추가됐어요!');
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 취향 관리
 // ════════════════════════════════════════════════════════════════
@@ -1611,7 +1757,7 @@ function syncPrefScreen() {
     chip.classList.toggle('active', state.prefs.excluded.includes(chip.textContent.trim()));
   });
 }
-
+ 
 function prefSelectSpicy(el) {
   document.querySelectorAll('#pref-spicy-row .spicy-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
@@ -1642,19 +1788,19 @@ function savePreferences() {
   showToast('취향이 저장됐어요! 더 정확하게 추천해드릴게요 ✓');
   vibrate();
 }
-
+ 
 function resetApp() {
   if(!confirm('모든 데이터가 삭제됩니다. 계속하시겠어요?')) return;
   localStorage.removeItem('jwmj_v2');
   location.reload();
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 유틸
 // ════════════════════════════════════════════════════════════════
 function showLoading() { document.getElementById('loading').classList.remove('hidden'); }
 function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
-
+ 
 let toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1663,11 +1809,11 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 2500);
 }
-
+ 
 function vibrate(ms=40) {
   try{ if(navigator.vibrate) navigator.vibrate(ms); } catch(e){}
 }
-
+ 
 // ════════════════════════════════════════════════════════════════
 // 초기화
 // ════════════════════════════════════════════════════════════════
@@ -1683,14 +1829,14 @@ function init() {
     document.getElementById('tab-bar').style.display='none';
   }
 }
-
+ 
 // 뒤로가기 (Android)
 window.addEventListener('popstate', e=>{
   e.preventDefault();
   goBack();
 });
 history.pushState({}, '');
-
+ 
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
