@@ -2250,16 +2250,6 @@ function calcDist(lat1,lng1,lat2,lng2) {
 }
  
  
-function retryRecommend() {
-  // 현재 결과 초기화
-  state.currentResult = null;
-  qStep = 0;
-  qAnswers = {};
-  // 스택 정리 후 홈으로
-  screenStack.length = 0;
-  showScreen('home-screen', false);
-  switchTab('home');
-}
  
 // ════════════════════════════════════════════════════════════════
 // 위치 기반 추천 (반경 탐색)
@@ -2529,157 +2519,20 @@ function searchNearby() {
   );
 }
  
-function getDistance(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
  
  
 // ════════════════════════════════════════════════════════════════
 // 추천 결과 화면
 // ════════════════════════════════════════════════════════════════
-function renderResultScreen(result) {
-  try {
-  const m = result.main;
-  currentMenuName = m.name;
  
-  // 위치 배지 (있을 때만)
-  const locBadge = document.getElementById('loc-change-badge');
-  if(locBadge) locBadge.style.display = 'none';
-  document.getElementById('r-emoji').textContent = m.emoji;
-  document.getElementById('r-name').textContent = m.name;
-  document.getElementById('r-category').textContent = m.cat+(m.sub?` · ${m.sub}`:'');
-  document.getElementById('r-reason').textContent = m.reason;
-  document.getElementById('r-price').textContent = m.price;
-  document.getElementById('r-score').textContent = Math.round(m.score)+'점';
-  document.getElementById('r-tags').innerHTML = m.tags.map(t=>`<span class="tag-chip">#${t}</span>`).join('');
  
-  // 후보
-  const cc = document.getElementById('candidates-container');
-  cc.innerHTML = result.candidates.map((c,i)=>`
-    <div class="cand-card" onclick="swapMain(${i})">
-      <span class="cand-rank">#${i+2}</span>
-      <span class="cand-emoji">${c.emoji}</span>
-      <div class="cand-info">
-        <div class="cand-name">${c.name}</div>
-        <div class="cand-cat">${c.cat}</div>
-        <div class="cand-reason">${c.reason}</div>
-      </div>
-      <div class="cand-score"><div class="cand-score-num">${Math.round(c.score)}</div><div class="cand-score-unit">점</div></div>
-      <span>›</span>
-    </div>
-  `).join('');
- 
-  // 지도 초기화
-  setTimeout(()=>{ if(typeof kakao!=='undefined') initKakaoMap(); }, 500);
-  // 지도 초기화
-  currentMenuName = m.name;
-  document.getElementById('map-section').style.display = 'none';
-  setTimeout(initKakaoMap, 800);
-  // 피드백 초기화
-  document.getElementById('fb-title').textContent = '먹어보셨나요?';
-  [1,2,3].forEach(r=>{
-    const b = document.getElementById('fb-'+r);
-    if(b) b.className='fb-btn';
-  });
-  } catch(e) { console.error('renderResultScreen error:', e); }
-}
- 
-function swapMain(idx) {
-  const r = state.currentResult;
-  const old = r.main;
-  const newMain = r.candidates[idx];
-  r.candidates[idx] = old;
-  r.main = newMain;
-  renderResultScreen(r);
-  showToast('메인 메뉴가 변경됐어요!');
-}
- 
-function decideMenu() {
-  const main = state.currentResult?.main;
-  if(!main) return;
-  const mealType = autoMealType();
-  const mealTypeLabel = {breakfast:'아침',lunch:'점심',dinner:'저녁',late_night:'야식'}[mealType];
-  const newMeal = { id:Date.now(), name:main.name, cat:main.cat,
-    date:todayStr(), type:mealType, sat:null, emoji:main.emoji||'🍽️' };
-  state.meals.unshift(newMeal);
-  saveState();
-  showToast('"'+main.name+'" 결정! 🎉');
-  setTimeout(function(){ openMapScreen(main.name); }, 500);
-}
  
 // ── 지도 화면 열기 ─────────────────────────────────
  
  
-function openMapScreen(menuName) {
-  mapMenuName = menuName;
-  mapRadiusIdx = state.prefs.radiusIdx || 2;
  
-  // 반경 슬라이더 초기화
-  const slider = document.getElementById('map-radius-slider');
-  const label  = document.getElementById('map-radius-label');
-  if(slider) slider.value = mapRadiusIdx;
-  if(label)  label.textContent = RADIUS_LABS[mapRadiusIdx];
  
-  document.getElementById('map-screen-title').textContent = `"${menuName}" 주변 식당`;
-  document.getElementById('map-screen-sub').textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
-  document.getElementById('map-loading').style.display = 'block';
-  document.getElementById('map-loading-text').textContent = '위치 확인 중...';
-  document.getElementById('map-place-list').innerHTML = '';
  
-  showScreen('map-screen');
- 
-  // 카카오맵 초기화 후 탐색
-  setTimeout(()=> initMainMap(()=> searchPlaces(menuName, mapRadiusIdx)), 300);
-}
- 
-function onMapRadiusChange(val) {
-  mapRadiusIdx = parseInt(val);
-  document.getElementById('map-radius-label').textContent = RADIUS_LABS[mapRadiusIdx];
-}
- 
-function reSearchMap() {
-  document.getElementById('map-loading').style.display = 'block';
-  document.getElementById('map-loading-text').textContent = '재탐색 중...';
-  document.getElementById('map-place-list').innerHTML = '';
-  document.getElementById('map-screen-sub').textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
-  // 반경 설정 저장
-  state.prefs.radiusIdx = mapRadiusIdx;
-  saveState();
-  searchPlaces(mapMenuName, mapRadiusIdx);
-}
- 
-function initMainMap(callback) {
-  const container = document.getElementById('main-kakao-map');
-  if(!container) return;
- 
-  // 이미 초기화됐으면 재사용
-  if(mapObject) { if(callback) callback(); return; }
- 
-  function tryCreate() {
-    if(typeof kakao === 'undefined' || !kakao.maps) return false;
-    try {
-      mapObject = new kakao.maps.Map(container, {
-        center: new kakao.maps.LatLng(37.5665, 126.9780),
-        level: 4
-      });
-      setTimeout(()=>{ kakao.maps.event.trigger(mapObject,'resize'); }, 100);
-      if(callback) callback();
-      return true;
-    } catch(e) { console.log('지도 오류:', e); return false; }
-  }
- 
-  if(!tryCreate()) {
-    let t = 0;
-    const iv = setInterval(()=>{
-      t++;
-      if(tryCreate() || t > 20) clearInterval(iv);
-    }, 400);
-  }
-}
  
 function searchPlaces(menuName, radiusIdx) {
   const radius = RADIUS_VALS[radiusIdx];
@@ -2820,11 +2673,6 @@ function showMapError(msg) {
   </div>`;
 }
  
-function calcDist(lat1,lng1,lat2,lng2) {
-  const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
-}
  
 function giveFeedback(rating) {
   const classes = {3:'selected-good', 2:'selected-neutral', 1:'selected-bad'};
