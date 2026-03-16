@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="지금뭐먹지">
+<meta name="theme-color" content="#FF6B35">
+<title>지금 뭐먹지</title>
+<style>
+:root{--primary:#FF6B35;--primary-light:#FF8C5A;--primary-dark:#E5541F;--primary-bg:#FFF3EE;--bg:#F8F9FA;--surface:#fff;--border:#E9ECEF;--text:#1A1A2E;--text2:#6C757D;--text3:#ADB5BD;--success:#28A745;--warning:#FFC107;--error:#DC3545;--radius:16px;--radius-sm:10px;--radius-full:999px;--shadow:0 2px 12px rgba(0,0,0,.08);--shadow-primary:0 6px 20px rgba(255,107,53,.3);}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
+#app{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative;overflow:hidden;}
+.screen{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow:hidden;}
+.screen.active{transform:translateX(0);}
+.screen.prev{transform:translateX(-30%);}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+.pad{padding:0 16px;}
+
+/* ── 공통 컴포넌트 ─────────────────────────── */
+.btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-size:17px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-primary);}
+.btn-primary:active{opacity:.85;transform:scale(.98);}
+.btn-outline{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;background:var(--surface);color:var(--primary);border:2px solid var(--primary);border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;}
+.btn-outline:active{opacity:.8;}
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px;box-shadow:var(--shadow);}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:var(--radius-full);font-size:13px;font-weight:600;}
+.header{display:flex;align-items:center;padding:12px 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--surface);}
+.back-btn{width:40px;height:40px;border-radius:var(--radius-full);background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.safe-top{padding-top:env(safe-area-inset-top,0px);}
+.safe-bottom{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 64px);}
+
+/* ── 탭바 ─────────────────────────────────── */
+#tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:calc(64px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0px);}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:11px;font-weight:600;padding-top:8px;}
+.tab-item.active{color:var(--primary);}
+.tab-icon{font-size:22px;line-height:1;}
+
+/* ── 온보딩 ─────────────────────────────────── */
+#onboarding{background:var(--surface);}
+.ob-slide{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;animation:fadeUp .4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.ob-emoji{font-size:72px;margin-bottom:24px;}
+.ob-title{font-size:36px;font-weight:900;color:var(--primary);margin-bottom:12px;}
+.ob-sub{font-size:22px;font-weight:700;color:var(--text);line-height:1.4;margin-bottom:12px;}
+.ob-desc{font-size:15px;color:var(--text2);line-height:1.6;}
+.ob-pref{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px;padding-bottom:120px;}
+.ob-pref-title{font-size:24px;font-weight:900;margin-bottom:4px;}
+.ob-pref-sub{font-size:13px;color:var(--text2);margin-bottom:24px;}
+.field-label{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;margin-top:20px;display:flex;align-items:center;gap:6px;}
+.toggle-row{display:flex;gap:8px;flex-wrap:wrap;}
+.toggle-btn{flex:1;min-width:100px;padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);text-align:center;transition:all .15s;}
+.toggle-btn.active{border-color:var(--primary);background:var(--primary-bg);color:var(--primary);}
+.spicy-row{display:flex;gap:6px;}
+.spicy-btn{flex:1;padding:10px 4px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;text-align:center;}
+.spicy-btn .e{font-size:22px;display:block;margin-bottom:3px;}
+.spicy-btn .l{font-size:10px;color:var(--text2);}
+.spicy-btn.active{border-color:var(--primary);background:var(--primary-bg);}
+.spicy-btn.active .l{color:var(--primary);font-weight:700;}
+.exclude-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.exclude-chip{padding:8px 14px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-full);font-size:13px;cursor:pointer;color:var(--text2);}
+.exclude-chip.active{border-color:var(--error);background:#FFF5F5;color:var(--error);font-weight:700;}
+.ob-footer{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:16px;background:linear-gradient(transparent,var(--surface) 30%);padding-top:40px;}
+.ob-dots{display:flex;justify-content:center;gap:6px;margin-bottom:16px;}
+.ob-dot{width:8px;height:8px;border-radius:4px;background:var(--border);transition:all .2s;}
+.ob-dot.active{width:24px;background:var(--primary);}
+
+/* ── 홈 ─────────────────────────────────────── */
+#home-screen{padding-bottom:0;}
+.home-header{padding:16px;display:flex;justify-content:space-between;align-items:flex-start;padding-top:calc(16px + env(safe-area-inset-top,0px));}
+.app-name{font-size:22px;font-weight:900;color:var(--primary);}
+.weather-badge{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.weather-badge .we{font-size:18px;}
+.weather-info{font-size:12px;color:var(--text2);}
+.home-cta{margin:0 16px 4px;background:var(--primary);border-radius:20px;padding:20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:var(--shadow-primary);border:none;width:calc(100% - 32px);}
+.home-cta:active{transform:scale(.98);}
+.cta-left{display:flex;align-items:center;gap:14px;}
+.cta-emoji{font-size:44px;}
+.cta-title{font-size:24px;font-weight:900;color:#fff;}
+.cta-sub{font-size:12px;color:rgba(255,255,255,.85);margin-top:2px;}
+.cta-arrow{background:rgba(255,255,255,.25);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.section-title{font-size:17px;font-weight:700;color:var(--text);margin:16px 16px 10px;}
+.emotion-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px;}
+.emotion-cell{background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);}
+.emotion-cell:active{transform:scale(.95);border-color:var(--primary);background:var(--primary-bg);}
+.emotion-cell .ee{font-size:28px;}
+.emotion-cell .el{font-size:11px;font-weight:700;text-align:center;color:var(--text);}
+.sit-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 16px;display:flex;gap:8px;scrollbar-width:none;}
+.sit-scroll::-webkit-scrollbar{display:none;}
+.sit-tag{display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-full);cursor:pointer;white-space:nowrap;font-size:14px;font-weight:600;box-shadow:var(--shadow);}
+.sit-tag:active{background:var(--primary-bg);border-color:var(--primary);}
+.sit-tag.tournament{border-color:var(--primary);background:var(--primary-bg);}
+.fate-card{margin:0 16px;background:var(--surface);border-radius:var(--radius);border:2px solid var(--primary);padding:16px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(255,107,53,.15);}
+.fate-emoji{font-size:44px;flex-shrink:0;}
+.fate-info{flex:1;}
+.fate-name{font-size:17px;font-weight:700;}
+.fate-msg{font-size:12px;color:var(--text2);margin-top:2px;line-height:1.4;}
+.fate-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.fate-yes{background:var(--primary);color:#fff;border:none;border-radius:var(--radius-full);padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;}
+.fate-no{width:32px;height:32px;border-radius:50%;background:var(--bg);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.history-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 16px;display:flex;gap:8px;scrollbar-width:none;}
+.history-scroll::-webkit-scrollbar{display:none;}
+.history-card{width:76px;flex-shrink:0;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.history-card .he{font-size:24px;}
+.history-card .hn{font-size:10px;font-weight:600;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.history-card .hd{font-size:9px;color:var(--text3);}
+
+/* ── 빠른 추천 질문 ──────────────────────────── */
+#quick-screen .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex:1;}
+#quick-screen .progress-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .3s;}
+#quick-screen .progress-label{font-size:12px;color:var(--text3);white-space:nowrap;}
+.q-area{padding:28px 16px 16px;}
+.q-tag{font-size:12px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.q-text{font-size:26px;font-weight:900;line-height:1.3;letter-spacing:-.3px;}
+.q-sub{font-size:13px;color:var(--text2);margin-top:6px;}
+.opts{padding:0 16px;display:flex;flex-direction:column;gap:10px;}
+.opt-btn{display:flex;align-items:center;gap:14px;padding:16px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .15s;box-shadow:var(--shadow);}
+.opt-btn.selected{border-color:var(--primary);background:var(--primary-bg);}
+.opt-btn:active{transform:scale(.98);}
+.opt-emoji{font-size:28px;width:36px;text-align:center;flex-shrink:0;}
+.opt-text{flex:1;}
+.opt-label{font-size:15px;font-weight:700;color:var(--text);}
+.opt-btn.selected .opt-label{color:var(--primary);}
+.opt-desc{font-size:12px;color:var(--text2);margin-top:2px;}
+.opt-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.opt-btn.selected .opt-check{background:var(--primary);border-color:var(--primary);color:#fff;}
+.skip-btn{text-align:center;padding:16px;color:var(--text3);font-size:14px;cursor:pointer;background:none;border:none;width:100%;}
+
+/* ── 추천 결과 ───────────────────────────────── */
+#result-screen .r-header{padding:16px;display:flex;justify-content:space-between;align-items:center;padding-top:calc(16px + env(safe-area-inset-top,0px));}
+#result-screen .r-header-left .sub{font-size:12px;color:var(--text2);}
+#result-screen .r-header-left .title{font-size:22px;font-weight:900;}
+.share-btn{width:40px;height:40px;border-radius:50%;background:var(--bg);border:none;cursor:pointer;font-size:18px;}
+.main-card{margin:0 16px 12px;background:var(--surface);border-radius:20px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;border:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,.08);position:relative;overflow:hidden;}
+.main-card::before{content:'';position:absolute;top:-50px;right:-50px;width:150px;height:150px;border-radius:50%;background:var(--primary);opacity:.05;}
+.top-badge{background:var(--primary-bg);border-radius:var(--radius-full);padding:5px 14px;font-size:11px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;display:flex;align-items:center;gap:4px;}
+.main-emoji-big{font-size:68px;margin-bottom:10px;}
+.main-menu-name{font-size:34px;font-weight:900;text-align:center;letter-spacing:-.5px;}
+.main-category{font-size:13px;color:var(--text2);margin-top:4px;}
+.reason-box{display:flex;align-items:flex-start;gap:6px;background:var(--primary-bg);border-radius:var(--radius-sm);padding:12px 14px;margin-top:14px;width:100%;}
+.reason-text{font-size:13px;color:var(--primary-dark,#C04A1C);line-height:1.5;font-weight:500;flex:1;}
+.meta-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center;}
+.meta-chip{display:flex;align-items:center;gap:4px;background:var(--bg);border-radius:var(--radius-full);padding:5px 12px;font-size:12px;color:var(--text2);font-weight:600;}
+.tags-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center;}
+.tag-chip{background:var(--bg);border-radius:var(--radius-full);padding:3px 10px;font-size:11px;color:var(--text2);}
+.action-row{display:flex;gap:10px;padding:0 16px 12px;}
+.decide-btn{flex:1;padding:16px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-size:17px;font-weight:900;cursor:pointer;box-shadow:var(--shadow-primary);}
+.decide-btn:active{transform:scale(.98);}
+.retry-btn{display:flex;align-items:center;gap:6px;padding:14px 18px;background:var(--surface);color:var(--primary);border:2px solid var(--primary);border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.candidates-section{padding:0 16px 12px;}
+.cand-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.cand-title{font-size:16px;font-weight:700;}
+.cand-hint{font-size:11px;color:var(--text3);}
+.cand-card{display:flex;align-items:center;gap:10px;padding:14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow);}
+.cand-card:active{background:var(--primary-bg);}
+.cand-rank{font-size:12px;font-weight:700;color:var(--text3);width:20px;text-align:center;}
+.cand-emoji{font-size:32px;}
+.cand-info{flex:1;min-width:0;}
+.cand-name{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cand-cat{font-size:11px;color:var(--text2);}
+.cand-reason{font-size:11px;color:var(--text3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cand-score{text-align:center;flex-shrink:0;}
+.cand-score-num{font-size:18px;font-weight:900;color:var(--primary);}
+.cand-score-unit{font-size:10px;color:var(--text3);}
+.feedback-section{margin:0 16px 12px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:18px;text-align:center;}
+.fb-title{font-size:15px;font-weight:700;margin-bottom:14px;}
+.fb-row{display:flex;gap:8px;}
+.fb-btn{flex:1;padding:14px 4px;background:var(--bg);border-radius:var(--radius-sm);border:2px solid var(--border);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.fb-btn.selected-good{border-color:var(--success);background:#F0FFF4;}
+.fb-btn.selected-neutral{border-color:var(--warning);background:#FFFDF0;}
+.fb-btn.selected-bad{border-color:var(--error);background:#FFF5F5;}
+.fb-emoji{font-size:28px;}
+.fb-label{font-size:11px;font-weight:600;color:var(--text2);}
+
+/* ── 토너먼트 ────────────────────────────────── */
+#tournament-screen{}
+.t-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;padding-top:calc(12px + env(safe-area-inset-top,0px));}
+.t-round-info{text-align:center;}
+.t-round-label{font-size:13px;font-weight:900;color:var(--primary);letter-spacing:2px;}
+.t-dots{display:flex;gap:6px;justify-content:center;margin-top:4px;}
+.t-dot{width:8px;height:8px;border-radius:4px;background:var(--border);}
+.t-dot.done{background:var(--primary);}
+.t-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px;}
+.t-intro{text-align:center;padding:20px;}
+.t-intro .ti-emoji{font-size:64px;margin-bottom:16px;}
+.t-intro .ti-title{font-size:28px;font-weight:900;margin-bottom:12px;}
+.t-intro .ti-desc{font-size:15px;color:var(--text2);line-height:1.6;margin-bottom:24px;}
+.t-instruction{font-size:17px;font-weight:700;margin-bottom:20px;text-align:center;}
+.t-vs-row{display:flex;align-items:center;gap:12px;width:100%;}
+.t-card{flex:1;background:var(--surface);border-radius:var(--radius);border:2px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:all .2s;min-height:200px;justify-content:center;box-shadow:var(--shadow);position:relative;}
+.t-card.winner{border-color:var(--primary);background:var(--primary-bg);box-shadow:var(--shadow-primary);}
+.t-card.loser{opacity:.45;}
+.t-card:active{transform:scale(.97);}
+.t-card .tc-emoji{font-size:48px;}
+.t-card .tc-name{font-size:16px;font-weight:900;text-align:center;line-height:1.2;}
+.t-card .tc-cat{font-size:11px;color:var(--text2);}
+.t-card .tc-price{font-size:11px;background:var(--bg);border-radius:var(--radius-full);padding:3px 10px;color:var(--text2);}
+.win-badge{position:absolute;top:8px;right:8px;background:var(--primary);color:#fff;border-radius:var(--radius-full);padding:3px 8px;font-size:10px;font-weight:700;}
+.t-vs-badge{width:36px;height:36px;border-radius:50%;background:var(--text);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0;}
+.t-finish{text-align:center;padding:20px 0;}
+.t-trophy{font-size:64px;margin-bottom:12px;}
+.t-finish-title{font-size:28px;font-weight:900;margin-bottom:20px;}
+.t-finish-card{background:var(--surface);border-radius:var(--radius);border:2px solid var(--primary);padding:24px;width:100%;margin-bottom:24px;box-shadow:var(--shadow-primary);}
+.t-finish-card .fe{font-size:56px;margin-bottom:8px;}
+.t-finish-card .fn{font-size:24px;font-weight:900;}
+.t-finish-card .fr{font-size:13px;color:var(--primary-dark,#C04A1C);margin-top:10px;line-height:1.5;background:var(--primary-bg);border-radius:8px;padding:10px 12px;}
+
+/* ── 식사기록 ─────────────────────────────────── */
+#record-screen{}
+.record-header{padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));display:flex;justify-content:space-between;align-items:flex-start;}
+.record-title{font-size:24px;font-weight:900;}
+.record-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+.add-btn{width:44px;height:44px;border-radius:50%;background:var(--primary);border:none;cursor:pointer;font-size:24px;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-primary);}
+.week-bar{display:flex;padding:0 16px;gap:4px;margin-bottom:4px;}
+.day-cell{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 2px;border-radius:10px;cursor:pointer;gap:3px;}
+.day-cell.today .day-num{color:var(--primary);}
+.day-cell.selected{background:var(--primary);}
+.day-cell.selected .day-name,.day-cell.selected .day-num{color:#fff;}
+.day-name{font-size:10px;color:var(--text3);font-weight:600;}
+.day-num{font-size:15px;font-weight:700;color:var(--text);}
+.meal-dot-r{width:5px;height:5px;border-radius:50%;background:var(--primary);}
+.day-cell.selected .meal-dot-r{background:rgba(255,255,255,.8);}
+.date-label-row{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border);}
+.date-label-text{font-size:15px;font-weight:700;}
+.meal-count-badge{font-size:13px;color:var(--text2);}
+.meal-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border-bottom:1px solid var(--border);}
+.meal-type-emoji{font-size:28px;}
+.meal-item-info{flex:1;}
+.meal-item-name{font-size:15px;font-weight:700;}
+.meal-item-meta{font-size:12px;color:var(--text2);margin-top:2px;}
+.meal-delete{padding:8px;background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;text-align:center;}
+.empty-emoji{font-size:56px;}
+.empty-title{font-size:18px;font-weight:700;color:var(--text);}
+.empty-desc{font-size:14px;color:var(--text2);}
+.empty-add-btn{display:flex;align-items:center;gap:6px;margin-top:8px;background:var(--primary-bg);border:1px solid var(--primary);color:var(--primary);padding:10px 20px;border-radius:var(--radius-full);font-size:14px;font-weight:700;cursor:pointer;}
+
+/* ── 식사기록 추가 모달 ───────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+.modal-overlay.hidden{display:none;}
+.modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:430px;max-height:92vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);}
+.modal-title{font-size:18px;font-weight:700;}
+.modal-save{background:var(--primary);color:#fff;border:none;border-radius:var(--radius-full);padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;}
+.modal-body{flex:1;overflow-y:auto;padding:16px 20px 20px;}
+.text-input{width:100%;padding:14px;background:var(--bg);border:2px solid var(--border);border-radius:var(--radius-sm);font-size:16px;color:var(--text);outline:none;}
+.text-input:focus{border-color:var(--primary);}
+.suggestions-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:4px;overflow:hidden;}
+.suggestion-item{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;}
+.suggestion-item:last-child{border-bottom:none;}
+.suggestion-item:active{background:var(--bg);}
+.sat-row{display:flex;gap:8px;}
+.sat-btn{flex:1;padding:14px 8px;background:var(--bg);border:2px solid var(--border);border-radius:var(--radius-sm);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
+.sat-btn.active-good{border-color:var(--success);background:#F0FFF4;}
+.sat-btn.active-neutral{border-color:var(--warning);background:#FFFDF0;}
+.sat-btn.active-bad{border-color:var(--error);background:#FFF5F5;}
+.sat-emoji{font-size:26px;}
+.sat-label{font-size:11px;font-weight:600;color:var(--text2);}
+
+/* ── 취향 ─────────────────────────────────────── */
+#pref-screen{}
+.pref-header{padding:16px;display:flex;justify-content:space-between;align-items:flex-start;padding-top:calc(16px + env(safe-area-inset-top,0px));}
+.pref-save-btn{background:var(--primary);color:#fff;border:none;border-radius:var(--radius-full);padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;}
+.switch-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);padding:14px 16px;}
+.switch-info{display:flex;align-items:center;gap:10px;}
+.switch-icon{font-size:22px;}
+.switch-title{font-size:15px;font-weight:700;}
+.switch-desc{font-size:12px;color:var(--text2);}
+.toggle-switch{position:relative;width:48px;height:26px;cursor:pointer;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:var(--border);border-radius:13px;transition:.3s;}
+.slider::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle-switch input:checked+.slider{background:var(--primary);}
+.toggle-switch input:checked+.slider::before{transform:translateX(22px);}
+
+/* ── 로딩 ─────────────────────────────────────── */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.92);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.loading-overlay.hidden{display:none;}
+.loading-spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:16px;font-weight:700;color:var(--text2);}
+
+/* ── 토스트 ────────────────────────────────────── */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--text);color:#fff;padding:12px 24px;border-radius:var(--radius-full);font-size:14px;font-weight:600;z-index:400;transition:transform .3s;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+.scrollable-content{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.pb-tab{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px));}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- 로딩 -->
+<div class="loading-overlay hidden" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">메뉴 분석 중...</div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<!-- 식사 추가 모달 -->
+<div class="modal-overlay hidden" id="add-modal">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);" onclick="closeAddModal()">✕</button>
+      <div class="modal-title">오늘 뭐 먹었어요?</div>
+      <button class="modal-save" onclick="saveNewMeal()">저장</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-label">🍽️ 메뉴 이름</div>
+      <input id="meal-name-input" class="text-input" placeholder="예) 된장찌개, 치킨, 파스타..." oninput="onMealNameInput(this.value)" autocomplete="off">
+      <div class="suggestions-list" id="meal-suggestions" style="display:none"></div>
+      <div class="field-label">⏰ 언제 드셨어요?</div>
+      <div class="toggle-row" id="meal-type-btns">
+        <button class="toggle-btn active" data-val="breakfast" onclick="selectMealType(this)">🌅 아침</button>
+        <button class="toggle-btn" data-val="lunch" onclick="selectMealType(this)">☀️ 점심</button>
+        <button class="toggle-btn" data-val="dinner" onclick="selectMealType(this)">🌙 저녁</button>
+        <button class="toggle-btn" data-val="late_night" onclick="selectMealType(this)">🦉 야식</button>
+      </div>
+      <div class="field-label">😋 어땠어요?</div>
+      <div class="sat-row">
+        <button class="sat-btn active-good" id="sat-3" onclick="selectSat(3)"><span class="sat-emoji">😋</span><span class="sat-label">맛있었어</span></button>
+        <button class="sat-btn" id="sat-2" onclick="selectSat(2)"><span class="sat-emoji">😐</span><span class="sat-label">그냥먹었어</span></button>
+        <button class="sat-btn" id="sat-1" onclick="selectSat(1)"><span class="sat-emoji">😤</span><span class="sat-label">괜히먹었어</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  화면 1: 온보딩                               -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen active" id="onboarding" style="background:var(--surface);">
+  <div id="ob-slide-0" class="ob-slide" style="display:flex;flex-direction:column;">
+    <div class="ob-emoji">🍽️</div>
+    <div class="ob-title">지금 뭐먹지?</div>
+    <div class="ob-sub">메뉴 고르느라<br>지치셨나요?</div>
+    <div class="ob-desc">저한테 맡겨보세요.<br>10초 안에 메뉴를 결정해드려요.</div>
+    <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+  </div>
+  <div id="ob-slide-1" class="ob-slide" style="display:none;">
+    <div class="ob-emoji">✨</div>
+    <div class="ob-title">이렇게 해요</div>
+    <div class="ob-sub">상황·감정·취향을<br>모두 분석해요</div>
+    <div class="ob-desc">날씨, 시간, 최근 먹은 것까지<br>고려한 맞춤 추천을 드려요.</div>
+    <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div></div>
+  </div>
+  <div id="ob-slide-2" style="display:none;flex:1;flex-direction:column;">
+    <div class="ob-pref">
+      <div class="ob-pref-title">취향을 알려주세요</div>
+      <div class="ob-pref-sub">나중에 언제든지 수정할 수 있어요</div>
+      <div class="field-label">🌶️ 맵기 선호도</div>
+      <div class="spicy-row">
+        <div class="spicy-btn" data-val="1" onclick="selectSpicy(this)"><span class="e">😊</span><span class="l">매우 순함</span></div>
+        <div class="spicy-btn" data-val="2" onclick="selectSpicy(this)"><span class="e">🙂</span><span class="l">약간 매움</span></div>
+        <div class="spicy-btn active" data-val="3" onclick="selectSpicy(this)"><span class="e">😅</span><span class="l">보통</span></div>
+        <div class="spicy-btn" data-val="4" onclick="selectSpicy(this)"><span class="e">🥵</span><span class="l">꽤 매움</span></div>
+        <div class="spicy-btn" data-val="5" onclick="selectSpicy(this)"><span class="e">🔥</span><span class="l">매우 매움</span></div>
+      </div>
+      <div class="field-label">💰 예산대</div>
+      <div class="toggle-row">
+        <div class="toggle-btn" data-val="1" onclick="selectBudget(this)">1만원 이하</div>
+        <div class="toggle-btn active" data-val="2" onclick="selectBudget(this)">1~2만원</div>
+        <div class="toggle-btn" data-val="3" onclick="selectBudget(this)">상관없어</div>
+      </div>
+      <div class="field-label">🧍 식사 스타일</div>
+      <div class="toggle-row">
+        <div class="toggle-btn active" data-val="solo" onclick="selectEatingStyle(this)">주로 혼밥 🧍</div>
+        <div class="toggle-btn" data-val="group" onclick="selectEatingStyle(this)">같이 먹기 👥</div>
+      </div>
+      <div class="field-label">🥦 다이어트 중?</div>
+      <div class="toggle-row">
+        <div class="toggle-btn active" data-val="no" onclick="selectDiet(this)">아니요 😋</div>
+        <div class="toggle-btn" data-val="yes" onclick="selectDiet(this)">네, 중이에요 🥗</div>
+      </div>
+      <div class="field-label">🚫 못 먹는 음식</div>
+      <div class="exclude-grid" id="exclude-grid">
+        <div class="exclude-chip" onclick="toggleExclude(this)">돼지고기</div>
+        <div class="exclude-chip" onclick="toggleExclude(this)">소고기</div>
+        <div class="exclude-chip" onclick="toggleExclude(this)">닭고기</div>
+        <div class="exclude-chip" onclick="toggleExclude(this)">해산물</div>
+        <div class="exclude-chip" onclick="toggleExclude(this)">생선</div>
+        <div class="exclude-chip" onclick="toggleExclude(this)">유제품</div>
+        <div class="exclude-chip" onclick="toggleExclude(this)">계란</div>
+        <div class="exclude-chip" onclick="toggleExclude(this)">견과류</div>
+        <div class="exclude-chip" onclick="toggleExclude(this)">밀(글루텐)</div>
+      </div>
+    </div>
+  </div>
+  <div class="ob-footer">
+    <button class="btn-primary" id="ob-next-btn" onclick="obNext()">다음 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  화면 2: 홈                                    -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="home-screen">
+  <div class="scrollable-content pb-tab" style="flex:1;">
+    <div class="home-header safe-top">
+      <div>
+        <div class="app-name">지금 뭐먹지</div>
+        <div class="weather-badge">
+          <span class="we" id="weather-emoji">🌤️</span>
+          <span class="weather-info" id="weather-info">오늘 점심, 무얼 드실 건가요?</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="home-cta" onclick="goQuick()">
+      <div class="cta-left">
+        <span class="cta-emoji">🍽️</span>
+        <div>
+          <div class="cta-title">지금 뭐먹지?</div>
+          <div class="cta-sub">10초 안에 메뉴 결정</div>
+        </div>
+      </div>
+      <div class="cta-arrow">→</div>
+    </button>
+
+    <div class="section-title">지금 기분이 어때요? 😊</div>
+    <div class="emotion-grid">
+      <div class="emotion-cell" onclick="goQuickEmotion('comfort')"><span class="ee">🤗</span><span class="el">위로 받고 싶어</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('stimulate')"><span class="ee">🌶️</span><span class="el">자극적인 거</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('light')"><span class="ee">🥗</span><span class="el">가벼운 거</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('healthy')"><span class="ee">💪</span><span class="el">건강하게</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('hearty')"><span class="ee">😤</span><span class="el">든든하게</span></div>
+      <div class="emotion-cell" onclick="goQuickEmotion('anything')"><span class="ee">🎲</span><span class="el">아무거나</span></div>
+    </div>
+
+    <div class="section-title">특별한 상황인가요? 🎯</div>
+    <div class="sit-scroll">
+      <div class="sit-tag" onclick="goQuickSituation('solo')"><span>🧍</span> 혼밥</div>
+      <div class="sit-tag" onclick="goQuickSituation('latenight')"><span>🌙</span> 야식</div>
+      <div class="sit-tag" onclick="goQuickSituation('hangover')"><span>🥴</span> 해장</div>
+      <div class="sit-tag" onclick="goQuickSituation('diet')"><span>🥦</span> 다이어트</div>
+      <div class="sit-tag" onclick="goQuickSituation('rainy')"><span>☔</span> 비 오는 날</div>
+      <div class="sit-tag tournament" onclick="goTournament()"><span>⚔️</span> 토너먼트</div>
+    </div>
+
+    <div id="fate-section">
+      <div class="section-title">오늘의 운명 메뉴 🎲</div>
+      <div class="fate-card">
+        <span class="fate-emoji" id="fate-emoji">🍲</span>
+        <div class="fate-info">
+          <div class="fate-name" id="fate-name">된장찌개</div>
+          <div class="fate-msg" id="fate-msg">비 온 뒤 땅이 굳듯, 오늘은 된장이 정답이에요</div>
+        </div>
+        <div class="fate-actions">
+          <button class="fate-yes" onclick="acceptFate()">수락!</button>
+          <button class="fate-no" onclick="dismissFate()">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="history-section" style="display:none;">
+      <div class="section-title">최근 추천 내역 📋</div>
+      <div class="history-scroll" id="history-scroll"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  화면 3: 빠른 추천 질문                        -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="quick-screen">
+  <div class="header safe-top">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="progress-bar"><div class="progress-fill" id="q-progress" style="width:20%"></div></div>
+    <span class="progress-label" id="q-label">1 / 5</span>
+  </div>
+  <div class="scrollable-content" style="flex:1;">
+    <div class="q-area">
+      <div class="q-tag" id="q-tag">Q1</div>
+      <div class="q-text" id="q-text">지금 혼자 드세요?</div>
+      <div class="q-sub" id="q-sub">함께하는 분에 따라 추천이 달라져요</div>
+    </div>
+    <div class="opts" id="opts-container"></div>
+    <button class="skip-btn" id="skip-btn" style="display:none;" onclick="skipQuestion()">건너뛰기 →</button>
+    <div style="height:24px;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  화면 4: 추천 결과                             -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="result-screen">
+  <div class="scrollable-content pb-tab" style="flex:1;">
+    <div class="r-header safe-top">
+      <div class="r-header-left">
+        <div class="sub">분석 완료!</div>
+        <div class="title">오늘은 이거예요 🎯</div>
+      </div>
+      <button class="share-btn" onclick="shareResult()">📤</button>
+    </div>
+    <div class="main-card">
+      <div class="top-badge">🏆 오늘의 추천</div>
+      <div class="main-emoji-big" id="r-emoji">🍲</div>
+      <div class="main-menu-name" id="r-name">된장찌개</div>
+      <div class="main-category" id="r-category">한식 · 찌개류</div>
+      <div class="reason-box">
+        <span>✨</span>
+        <div class="reason-text" id="r-reason">추천 이유가 여기 나와요</div>
+      </div>
+      <div class="meta-row">
+        <span class="meta-chip"><span>💰</span><span id="r-price">8,000~12,000원</span></span>
+        <span class="meta-chip"><span>📊</span><span id="r-score">87점</span></span>
+      </div>
+      <div class="tags-row" id="r-tags"></div>
+    </div>
+    <div class="action-row">
+      <button class="decide-btn" onclick="decideMenu()">이걸로 결정! 🙌</button>
+      <button class="retry-btn" onclick="retryRecommend()">🔄 다시</button>
+    </div>
+    <div class="candidates-section">
+      <div class="cand-header">
+        <span class="cand-title">다른 후보도 있어요</span>
+        <span class="cand-hint">탭하면 메인으로</span>
+      </div>
+      <div id="candidates-container"></div>
+    </div>
+    <div class="feedback-section">
+      <div class="fb-title" id="fb-title">먹어보셨나요?</div>
+      <div class="fb-row">
+        <button class="fb-btn" id="fb-3" onclick="giveFeedback(3)"><span class="fb-emoji">😋</span><span class="fb-label">좋았음</span></button>
+        <button class="fb-btn" id="fb-2" onclick="giveFeedback(2)"><span class="fb-emoji">😐</span><span class="fb-label">보통이었음</span></button>
+        <button class="fb-btn" id="fb-1" onclick="giveFeedback(1)"><span class="fb-emoji">😤</span><span class="fb-label">괜히먹음</span></button>
+      </div>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  화면 5: 토너먼트                              -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="tournament-screen">
+  <div class="t-header safe-top">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="t-round-info">
+      <div class="t-round-label" id="t-round-label">ROUND 1</div>
+      <div class="t-dots" id="t-dots"></div>
+    </div>
+    <div style="width:40px;"></div>
+  </div>
+  <div class="t-body" id="t-body">
+    <div class="t-intro">
+      <div class="ti-emoji">⚔️</div>
+      <div class="ti-title">메뉴 토너먼트</div>
+      <div class="ti-desc">2개씩 비교해서 고르다 보면<br>최종 오늘의 메뉴가 결정돼요!<br><br>총 3~4라운드, 1분이면 끝나요.</div>
+      <button class="btn-primary" style="max-width:240px;" onclick="startTournament()">토너먼트 시작! ⚔️</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  화면 6: 식사 기록 (탭)                       -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="record-screen">
+  <div class="scrollable-content pb-tab" style="flex:1;">
+    <div class="record-header safe-top">
+      <div>
+        <div class="record-title">식사 기록</div>
+        <div class="record-sub">기록하면 더 잘 추천해드려요</div>
+      </div>
+      <button class="add-btn" onclick="openAddModal()">+</button>
+    </div>
+    <div class="week-bar" id="week-bar"></div>
+    <div class="date-label-row">
+      <span class="date-label-text" id="selected-date-label">오늘</span>
+      <span class="meal-count-badge" id="meal-count-badge">0끼</span>
+    </div>
+    <div id="meal-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  화면 7: 취향 관리 (탭)                       -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="pref-screen">
+  <div class="scrollable-content pb-tab" style="flex:1;">
+    <div class="pref-header safe-top">
+      <div>
+        <div style="font-size:24px;font-weight:900;">취향 관리</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;">저장하면 추천이 더 정확해져요</div>
+      </div>
+      <button class="pref-save-btn" onclick="savePreferences()">저장 ✓</button>
+    </div>
+    <div class="pad">
+      <div class="field-label">🌶️ 맵기 선호도</div>
+      <div class="spicy-row" id="pref-spicy-row">
+        <div class="spicy-btn" data-val="1" onclick="prefSelectSpicy(this)"><span class="e">😊</span><span class="l">매우순함</span></div>
+        <div class="spicy-btn" data-val="2" onclick="prefSelectSpicy(this)"><span class="e">🙂</span><span class="l">약간매움</span></div>
+        <div class="spicy-btn active" data-val="3" onclick="prefSelectSpicy(this)"><span class="e">😅</span><span class="l">보통</span></div>
+        <div class="spicy-btn" data-val="4" onclick="prefSelectSpicy(this)"><span class="e">🥵</span><span class="l">꽤매움</span></div>
+        <div class="spicy-btn" data-val="5" onclick="prefSelectSpicy(this)"><span class="e">🔥</span><span class="l">매우매움</span></div>
+      </div>
+      <div class="field-label">💰 예산대</div>
+      <div class="toggle-row" id="pref-budget-row">
+        <div class="toggle-btn" data-val="1" onclick="prefSelectBudget(this)">1만원 이하</div>
+        <div class="toggle-btn active" data-val="2" onclick="prefSelectBudget(this)">1~2만원</div>
+        <div class="toggle-btn" data-val="3" onclick="prefSelectBudget(this)">상관없어</div>
+      </div>
+      <div class="field-label">🧍 식사 스타일</div>
+      <div class="toggle-row" id="pref-solo-row">
+        <div class="toggle-btn active" data-val="solo" onclick="prefSelectSolo(this)">주로 혼밥 🧍</div>
+        <div class="toggle-btn" data-val="group" onclick="prefSelectSolo(this)">같이 먹기 👥</div>
+      </div>
+      <div class="field-label" style="margin-top:20px;">🥦 다이어트 모드</div>
+      <div class="switch-row">
+        <div class="switch-info">
+          <span class="switch-icon">🥦</span>
+          <div>
+            <div class="switch-title">다이어트 모드</div>
+            <div class="switch-desc">칼로리 낮은 메뉴를 우선 추천해요</div>
+          </div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="pref-diet-toggle" onchange="prefToggleDiet(this)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="field-label">🚫 못 먹는 음식</div>
+      <div class="exclude-grid" id="pref-exclude-grid">
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">돼지고기</div>
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">소고기</div>
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">닭고기</div>
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">해산물</div>
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">생선</div>
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">유제품</div>
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">계란</div>
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">견과류</div>
+        <div class="exclude-chip" onclick="prefToggleExclude(this)">밀(글루텐)</div>
+      </div>
+      <div style="height:20px;"></div>
+      <div style="background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);overflow:hidden;margin-top:8px;">
+        <div style="display:flex;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;"><span style="color:var(--text2);">앱 버전</span><span style="font-weight:600;">1.0.0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:14px 16px;font-size:14px;"><span style="color:var(--text2);">메뉴 데이터베이스</span><span style="font-weight:600;">300개</span></div>
+      </div>
+      <button onclick="resetApp()" style="width:100%;padding:16px;margin-top:16px;background:none;border:none;color:var(--error);font-size:14px;font-weight:600;cursor:pointer;">앱 데이터 초기화 🗑️</button>
+    </div>
+  </div>
+</div>
+
+<!-- 탭바 -->
+<div id="tab-bar">
+  <button class="tab-item active" id="tab-home" onclick="switchTab('home')">
+    <span class="tab-icon">🍽️</span><span>추천</span>
+  </button>
+  <button class="tab-item" id="tab-record" onclick="switchTab('record')">
+    <span class="tab-icon">📅</span><span>기록</span>
+  </button>
+  <button class="tab-item" id="tab-pref" onclick="switchTab('pref')">
+    <span class="tab-icon">👤</span><span>취향</span>
+  </button>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// 300개 메뉴 데이터베이스
+// 컬럼: id, name, cat, sub, spicy, salty, sweet, greasy, light, soupy,
+//       crispy, soft, stim, full, comfort, solo, group, latenight, lunch,
+//       dinner, hangover, rainy, cold, hot, price, delivery, speed,
+//       popular, dislike, regret, cal, protein, veg, carb, diet, workout
+// ════════════════════════════════════════════════════════════════
+const MENUS = [
+[1,'비빔밥','한식','밥류',2,2,2,1,3,1,1,3,2,3,3,5,3,2,5,4,3,3,2,3,1,4,3,5,1,1,3,2,4,4,3,3],
+[2,'된장찌개','한식','찌개류',1,3,1,1,3,5,1,3,2,3,5,4,3,2,4,4,5,5,5,2,2,4,2,3,3,1,1,2,3,4,5,2],
+[3,'김치찌개','한식','찌개류',4,4,1,2,2,5,1,3,4,4,4,4,4,3,4,5,5,5,2,2,4,2,3,3,1,1,2,2,4,5,2,2],
+[4,'삼겹살','한식','고기류',2,3,1,5,1,1,3,3,3,5,4,2,5,4,3,5,4,4,4,1,3,5,1,1,5,4,3,1,3,3,4,2],
+[5,'불고기','한식','고기류',2,3,3,3,2,1,1,3,2,4,4,3,4,3,4,4,3,4,4,2,3,4,1,2,4,3,4,1,1,3,4,1],
+[6,'갈비탕','한식','국물류',1,2,1,2,3,5,1,4,1,4,5,4,3,2,4,5,5,5,5,2,1,4,2,4,3,1,1,3,4,1,3,5],
+[7,'설렁탕','한식','국물류',1,2,1,2,3,5,1,4,1,4,5,5,3,1,4,5,5,5,5,2,1,5,2,3,3,1,1,3,4,1,3,5],
+[8,'순대국밥','한식','국물류',3,4,1,3,2,5,1,3,3,4,4,4,3,3,4,5,4,5,4,1,2,4,2,3,3,2,2,4,3,2,3,4],
+[9,'해장국','한식','국물류',4,4,1,2,2,5,1,3,4,4,5,5,3,4,4,5,5,5,4,1,2,5,2,4,2,2,2,4,3,2,3,4],
+[10,'콩나물국밥','한식','국물류',2,3,1,1,4,5,1,3,2,3,5,5,3,3,4,5,4,5,4,1,2,5,2,4,2,1,1,2,2,3,3,5],
+[11,'돌솥비빔밥','한식','밥류',2,2,2,1,3,1,2,3,2,3,4,4,3,2,5,4,3,3,3,1,3,4,2,3,3,1,1,3,2,4,4,3],
+[12,'육개장','한식','국물류',4,4,1,2,2,5,1,3,4,4,4,4,3,4,4,4,5,5,5,2,1,4,2,4,2,2,2,3,4,3,3,4],
+[13,'순두부찌개','한식','찌개류',3,4,1,2,3,5,1,4,3,3,4,4,3,3,4,4,5,5,5,2,2,4,2,4,2,2,2,4,3,2,3,4],
+[14,'제육볶음','한식','볶음류',5,4,2,3,2,1,1,3,5,4,4,4,4,4,4,5,4,4,4,1,3,5,1,1,4,3,3,1,2,2,4,3],
+[15,'돈까스','한식/일식','튀김류',1,2,1,4,2,1,5,3,2,4,3,5,3,2,5,4,3,3,3,2,2,3,1,2,4,4,4,1,1,2,4,3],
+[16,'냉면','한식','면류',1,2,1,1,4,4,1,3,1,3,3,4,3,2,4,3,3,3,3,2,2,3,1,2,5,2,3,3,2,2,2,2],
+[17,'칼국수','한식','면류',1,2,1,1,4,5,1,4,1,3,5,4,4,1,5,4,5,5,5,2,2,4,2,4,2,2,2,4,2,2,5,4],
+[18,'잔치국수','한식','면류',1,2,1,1,4,5,1,4,1,2,5,4,4,1,4,4,5,5,5,2,2,4,1,2,4,1,1,2,2,2,5,5],
+[19,'수제비','한식','면류',1,2,1,1,4,5,1,4,1,3,5,5,4,1,4,5,5,5,5,2,2,4,2,4,2,1,2,3,2,2,5,4],
+[20,'떡볶이','한식/분식','분식류',4,3,3,2,2,2,1,3,4,3,3,4,4,4,4,4,5,4,4,1,2,4,2,3,3,1,1,2,3,1,5,4],
+[21,'순대','한식/분식','분식류',2,3,1,3,2,1,1,3,3,3,3,4,4,3,4,4,5,3,4,1,2,3,2,3,2,2,3,1,3,3,4,3],
+[22,'튀김','한식/분식','분식류',1,2,1,4,2,1,5,2,2,3,3,4,4,3,3,3,5,3,3,1,2,2,2,2,2,3,3,1,2,2,3,3],
+[23,'김밥','한식/분식','분식류',1,2,1,1,3,1,1,3,1,3,3,5,3,1,4,4,5,3,4,1,1,3,2,2,3,1,4,1,1,1,3,2],
+[24,'라면','한식/분식','면류',4,4,1,2,2,5,1,3,4,3,3,5,4,4,3,3,5,3,5,1,2,4,2,4,2,4,1,1,2,3,3,2],
+[25,'부대찌개','한식','찌개류',3,4,2,3,2,5,1,3,3,4,4,4,4,3,4,4,5,5,5,2,2,4,2,3,3,2,2,4,3,1,3,3],
+[26,'쌈밥','한식','밥류',2,2,1,2,4,1,1,3,2,3,4,3,4,2,4,4,4,3,3,1,3,3,2,2,3,2,3,4,1,1,2,3],
+[27,'보쌈','한식','고기류',1,2,1,2,3,1,1,4,2,4,4,3,5,2,4,4,5,5,4,1,3,4,2,3,4,3,3,3,4,2,3,4],
+[28,'족발','한식','고기류',1,3,2,3,2,1,1,4,2,4,3,3,5,3,4,4,5,4,5,1,3,3,2,3,4,3,3,4,4,1,2,3],
+[29,'갈비구이','한식','고기류',2,3,3,4,2,1,2,3,2,5,5,3,5,2,4,5,5,5,4,2,3,4,1,2,5,2,3,5,1,1,4,5],
+[30,'곱창구이','한식','고기류',2,3,1,4,1,1,2,3,3,4,4,2,5,3,3,4,5,3,4,1,3,3,2,3,4,3,3,5,3,1,2,2],
+[31,'곰탕','한식','국물류',1,2,1,2,3,5,1,4,1,4,5,5,3,1,4,5,5,5,5,2,1,5,2,3,3,1,1,3,4,1,3,5],
+[32,'삼계탕','한식','국물류',1,2,1,2,3,5,1,4,1,5,5,4,4,1,5,5,5,5,5,2,1,4,2,3,4,1,1,4,5,2,2,5],
+[33,'닭볶음탕','한식','찌개류',4,4,2,2,2,3,1,3,4,4,4,4,4,4,4,4,4,4,4,2,3,4,1,2,3,3,3,3,4,2,3,3],
+[34,'닭갈비','한식','고기류',4,4,2,2,2,1,1,3,4,4,4,3,4,4,4,4,4,4,4,1,3,4,1,2,3,3,3,3,4,3,3,3],
+[35,'오삼불고기','한식','볶음류',5,4,2,3,2,1,1,3,5,4,4,3,4,5,4,4,4,4,4,1,3,4,1,2,3,3,3,3,4,2,3,3],
+[36,'낙지볶음','한식','볶음류',5,4,1,1,3,1,1,3,5,3,3,3,3,5,4,3,4,3,4,1,3,3,1,2,3,3,3,4,4,2,3,3],
+[37,'해물탕','한식','국물류',4,4,1,2,3,5,1,3,4,4,4,3,4,4,4,4,5,5,5,2,2,4,2,4,4,2,2,3,5,3,2,4],
+[38,'동태찌개','한식','찌개류',3,4,1,1,3,5,1,3,3,3,4,4,4,3,4,4,5,5,5,2,2,4,2,4,2,2,2,3,4,2,2,5],
+[39,'생선구이','한식','생선류',1,3,1,2,3,1,2,3,2,3,4,4,4,2,4,4,4,3,3,1,2,3,2,3,3,2,3,4,4,1,2,4],
+[40,'조기찜','한식','생선류',1,3,1,1,3,2,1,4,2,3,4,4,4,2,4,4,4,3,3,1,2,3,2,3,3,2,3,4,4,2,2,4],
+[41,'쭈꾸미볶음','한식','볶음류',5,4,1,2,3,1,1,3,5,3,3,3,3,5,3,3,4,3,4,1,2,3,1,2,3,3,3,4,4,2,3,3],
+[42,'갈치조림','한식','생선류',2,4,2,2,2,2,1,3,3,3,4,4,4,3,4,4,4,3,3,1,2,3,2,3,3,2,3,3,4,2,2,4],
+[43,'두부김치','한식','안주류',3,3,1,2,3,1,1,3,3,3,4,4,3,3,4,4,4,3,4,1,2,3,2,3,2,2,3,3,3,3,2,4],
+[44,'파전','한식','전류',1,3,1,2,3,1,2,3,2,3,4,4,4,2,4,4,5,4,5,1,2,4,2,3,3,3,3,3,2,3,3,3],
+[45,'해물파전','한식','전류',1,3,1,3,3,1,3,3,2,3,4,4,4,2,4,4,5,4,5,1,2,4,2,3,4,3,3,3,3,3,2,3],
+[46,'김치전','한식','전류',3,3,1,3,3,1,3,3,3,3,4,4,4,3,3,4,5,4,5,1,2,4,2,3,2,3,3,3,2,2,3,3],
+[47,'녹두전','한식','전류',1,2,1,3,3,1,3,3,2,3,4,4,3,2,4,4,5,4,5,1,2,3,2,3,3,3,3,3,3,3,3,3],
+[48,'잡채','한식','면류',2,2,2,2,3,1,1,3,2,3,4,4,3,2,4,4,4,4,4,1,3,3,2,3,3,3,3,4,2,4,5,3],
+[49,'떡국','한식','국물류',1,2,1,1,4,5,1,4,1,3,5,5,4,1,4,5,5,5,4,2,2,4,2,5,2,2,2,4,2,1,5,4],
+[50,'만두','한식','만두류',2,2,1,2,3,2,2,4,2,3,4,4,3,2,4,4,5,4,4,1,2,3,2,3,2,3,3,3,3,2,4,3],
+[51,'왕만두','한식','만두류',2,2,1,2,3,2,1,4,2,4,4,4,3,2,4,4,5,4,4,1,2,3,2,3,2,3,3,3,3,2,4,3],
+[52,'군만두','한식','만두류',2,2,1,3,3,1,4,3,2,3,4,4,3,2,3,3,5,4,4,1,2,3,2,3,2,4,3,3,3,2,4,3],
+[53,'물냉면','한식','면류',1,2,1,1,4,5,1,3,1,3,3,5,3,1,4,3,3,3,3,2,2,3,1,2,5,2,3,3,2,2,2,2],
+[54,'비빔냉면','한식','면류',3,3,2,1,3,1,1,3,3,3,3,4,3,3,4,3,4,3,4,2,2,3,1,1,5,2,3,3,2,2,2,2],
+[55,'쫄면','한식','면류',4,3,2,1,3,1,1,3,4,3,3,4,3,4,3,3,5,4,4,1,2,3,2,2,2,3,3,2,2,3,4,3],
+[56,'짜장면','중식','면류',1,2,2,3,2,2,1,3,2,4,4,5,4,2,5,4,5,4,5,1,2,3,1,2,2,3,3,1,1,1,4,3],
+[57,'짬뽕','중식','면류',4,4,1,2,2,5,1,3,4,4,4,5,4,4,5,4,5,4,5,1,2,4,2,4,2,3,3,2,2,2,4,3],
+[58,'탕수육','중식','튀김류',1,2,4,4,2,1,5,3,2,4,3,4,4,2,4,4,5,4,4,1,3,2,1,2,4,4,3,3,2,2,5,3],
+[59,'마파두부','중식','볶음류',4,3,1,3,3,2,1,4,4,3,4,3,4,4,4,4,4,3,4,1,2,3,2,3,3,3,3,4,3,2,3,3],
+[60,'볶음밥','중식','밥류',1,3,1,3,3,1,1,3,2,3,3,5,4,2,5,4,5,4,5,1,2,3,1,2,2,4,3,2,3,2,4,3],
+[61,'짬뽕밥','중식','밥류',4,4,1,2,2,3,1,3,4,4,4,5,4,4,5,4,5,4,5,1,2,4,2,4,2,3,3,2,2,2,4,3],
+[62,'깐풍기','중식','튀김류',3,3,2,4,2,1,5,3,3,4,3,4,4,3,4,4,5,4,4,1,2,3,1,2,4,4,3,4,4,1,3,3],
+[63,'마라탕','중식','국물류',5,4,1,3,2,5,1,3,5,4,4,3,4,5,4,3,5,4,5,2,2,3,2,4,3,3,3,5,3,3,3,3],
+[64,'마라샹궈','중식','볶음류',5,4,1,4,2,1,1,3,5,4,3,3,4,5,4,3,5,4,5,1,2,3,2,3,4,3,2,4,3,3,2,3],
+[65,'훠궈','중식','국물류',4,4,1,3,2,5,1,3,4,5,4,3,5,4,4,4,5,5,4,2,2,3,2,4,5,2,2,5,4,4,2,3],
+[66,'양꼬치','중식','고기류',2,3,1,3,2,1,2,3,3,4,3,3,3,3,3,3,4,4,4,2,2,3,1,2,4,3,3,4,4,1,2,3],
+[67,'딤섬','중식','만두류',1,2,1,2,3,1,1,4,1,3,3,3,4,1,3,4,3,4,3,2,2,3,1,2,4,3,3,4,3,2,3,3],
+[68,'초밥','일식','밥류',1,2,1,1,4,1,1,3,1,3,3,4,4,1,4,4,4,4,4,2,2,2,1,2,5,2,3,4,4,1,3,4],
+[69,'라멘','일식','면류',3,4,1,3,2,5,1,3,3,4,4,4,4,3,5,4,5,4,4,1,2,4,2,4,3,3,2,3,3,2,4,3],
+[70,'돈카츠','일식','튀김류',1,2,1,4,2,1,5,3,2,4,3,5,3,2,5,4,4,3,4,2,2,3,1,2,4,4,3,3,3,1,4,3],
+[71,'우동','일식','면류',1,2,1,1,4,5,1,4,1,3,4,4,4,1,5,4,5,4,4,1,2,4,2,4,2,3,2,4,2,2,5,4],
+[72,'소바','일식','면류',1,2,1,1,4,3,1,3,1,2,4,4,3,1,4,4,5,4,3,2,2,3,1,2,5,2,3,3,2,2,2,2],
+[73,'규동','일식','밥류',2,3,3,2,2,2,1,3,2,4,4,5,3,2,5,4,5,4,4,1,2,3,1,2,3,4,3,3,3,1,4,3],
+[74,'오야코동','일식','밥류',1,2,2,2,3,2,1,4,1,4,4,5,4,1,5,4,5,4,4,1,2,3,1,2,3,4,3,4,4,2,3,4],
+[75,'카레라이스','일식/양식','밥류',2,2,3,2,3,2,1,3,2,4,4,5,4,2,5,4,5,4,4,1,2,3,1,3,2,4,3,3,2,2,4,3],
+[76,'파스타','양식','면류',2,3,2,3,3,2,1,3,2,3,3,4,4,2,5,4,5,4,4,1,2,3,1,2,3,4,3,4,3,2,4,3],
+[77,'피자','양식','빵류',2,3,2,4,2,1,3,3,2,4,3,3,4,2,5,4,5,4,4,1,2,3,1,2,4,5,2,3,3,2,4,3],
+[78,'스테이크','양식','고기류',1,2,1,4,2,1,2,3,2,5,4,3,4,1,4,5,3,5,3,2,2,2,1,2,5,2,3,5,5,1,2,3],
+[79,'버거','양식','패스트푸드',1,3,2,4,2,1,3,3,2,4,3,5,4,2,5,4,5,4,5,1,2,3,1,2,3,5,1,2,3,1,4,3],
+[80,'샌드위치','양식','빵류',1,2,2,2,3,1,2,3,1,3,3,5,4,1,4,4,5,4,4,1,2,3,1,2,3,3,2,4,3,2,3,4],
+];
+
+// 컬럼 인덱스 (MENUS 배열에서)
+const IDX = {
+  id:0,name:1,cat:2,sub:3,
+  spicy:4,salty:5,sweet:6,greasy:7,light:8,soupy:9,
+  crispy:10,soft:11,stim:12,
+  full:13,comfort:14,solo:15,group:16,latenight:17,
+  lunch:18,dinner:19,hangover:20,rainy:21,cold:22,hot:23,
+  price:24,delivery:25,speed:26,popular:27,dislike:28,regret:29,
+  cal:30,protein:31,veg:32,carb:33,diet:34,workout:35
+};
+
+const PRICE_LABEL = {1:'5,000~8,000원',2:'8,000~12,000원',3:'12,000~18,000원',4:'18,000~30,000원',5:'30,000원 이상'};
+const CAT_EMOJI = {'한식':'🍚','중식':'🥢','일식':'🍣','양식':'🍝','분식':'🥟','패스트푸드':'🍔','건강식':'🥗','카페/브런치':'☕','베트남':'🍜','태국':'🌿','디저트':'🍰','인도':'🍛','아시안':'🍜','하와이안':'🌺','멕시칸':'🌮','한식/분식':'🥟','한식/일식':'🍱','한식/중식':'🥢','음료/카페':'☕','카페':'☕','과일/간식':'🍎','한식/간식':'🍠','영국요리':'🐟','이탈리안':'🍝','중동/터키':'🥙','중동':'🥙','스페인':'🦐'};
+
+// ════════════════════════════════════════════════════════════════
+// 상태 관리
+// ════════════════════════════════════════════════════════════════
+let state = {
+  // 기본
+  onboarded: false,
+  currentScreen: 'onboarding',
+  obStep: 0,
+  // 취향
+  prefs: { spicy:3, budget:2, solo:true, diet:false, excluded:[] },
+  // 추천
+  currentAnswers: {},
+  currentResult: null,
+  history: [],
+  // 식사 기록
+  meals: [],
+  selectedDate: todayStr(),
+  addModalMealType: autoMealType(),
+  addModalSat: 3,
+  // 토너먼트
+  tCandidates: [],
+  tRound: 0,
+  tTotal: 3,
+  tWinnersAll: [],
+  // 날씨
+  weatherEmoji: '🌤️',
+  weatherInfo: '',
+};
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+function autoMealType() {
+  const h = new Date().getHours();
+  if(h>=6&&h<10) return 'breakfast';
+  if(h>=10&&h<15) return 'lunch';
+  if(h>=15&&h<21) return 'dinner';
+  return 'late_night';
+}
+
+// ── 로컬스토리지 ─────────────────────────────────
+function saveState() {
+  try {
+    localStorage.setItem('jwmj_v2', JSON.stringify({
+      onboarded: state.onboarded,
+      prefs: state.prefs,
+      meals: state.meals,
+      history: state.history.slice(0,20),
+    }));
+  } catch(e){}
+}
+function loadState() {
+  try {
+    const d = localStorage.getItem('jwmj_v2');
+    if(!d) return;
+    const saved = JSON.parse(d);
+    state.onboarded = saved.onboarded||false;
+    state.prefs = Object.assign(state.prefs, saved.prefs||{});
+    state.meals = saved.meals||[];
+    state.history = saved.history||[];
+  } catch(e){}
+}
+
+// ════════════════════════════════════════════════════════════════
+// 추천 엔진
+// ════════════════════════════════════════════════════════════════
+function scoreMenu(m, ctx, answers) {
+  const p = IDX;
+  let score = 50;
+
+  // 상황 점수 (40%)
+  let ctx_score = 0;
+  const h = ctx.hour;
+  if(h>=22||h<4) ctx_score += m[p.latenight]*2.0;
+  else if(h>=10&&h<15) ctx_score += m[p.lunch]*1.3;
+  else if(h>=17&&h<21) ctx_score += m[p.dinner]*1.3;
+
+  if(ctx.weather==='rainy') { ctx_score += m[p.rainy]*1.8; if(m[p.soupy]>=4) ctx_score+=5; }
+  if(ctx.weather==='snowy') ctx_score += m[p.cold]*2.0;
+  if(ctx.temp!==undefined) {
+    if(ctx.temp<5) ctx_score += (m[p.cold]+m[p.soupy])*1.5;
+    else if(ctx.temp<15) ctx_score += m[p.cold]*1.0;
+    else if(ctx.temp>30) ctx_score += m[p.hot]*1.8;
+    else if(ctx.temp>25) ctx_score += m[p.hot]*1.2;
+  }
+  if(ctx.hangover) ctx_score += m[p.hangover]*2.5;
+  if(answers.solo===true) ctx_score += m[p.solo]*1.5;
+  else if(answers.solo===false) ctx_score += m[p.group]*1.5;
+  if(state.prefs.diet) ctx_score += m[p.diet]*2.0 - m[p.cal]*1.5;
+  score += ctx_score * 0.40;
+
+  // 취향 점수 (30%)
+  let taste = 0;
+  if(answers.spicy==='spicy') taste += m[p.spicy]*2;
+  else if(answers.spicy==='mild') taste += (6-m[p.spicy])*2;
+  else taste -= Math.abs(m[p.spicy]-state.prefs.spicy)*2;
+  if(answers.soup===true) taste += m[p.soupy]*3;
+  else if(answers.soup===false) taste += (6-m[p.soupy])*2;
+  if(answers.hungry==='heavy') taste += m[p.full]*2;
+  else if(answers.hungry==='light') taste += (6-m[p.full])*2+m[p.light]*1.5;
+  else taste += m[p.full]*1;
+  if(answers.emotion) {
+    const em = {
+      comfort: m[p.comfort]*3+m[p.soupy]*2,
+      stimulate: m[p.stim]*3+m[p.spicy]*2,
+      light: m[p.light]*3+(6-m[p.cal])*2,
+      healthy: m[p.diet]*3+m[p.veg]*2,
+      hearty: m[p.full]*3+m[p.protein]*2,
+      anything: m[p.popular]*2,
+    };
+    taste += em[answers.emotion]||0;
+  }
+  score += taste * 0.30;
+
+  // 대중성 + 후회 방지 (30%)
+  score += m[p.popular]*1.5*0.15*10;
+  score += (6-m[p.regret])*2*0.15*10;
+  score += m[p.comfort]*0.15*5;
+
+  // 페널티
+  const recentMenuNames = state.meals
+    .filter(ml=>{ const d=new Date(); d.setDate(d.getDate()-3); return new Date(ml.date)>=d; })
+    .map(ml=>ml.name);
+  if(recentMenuNames.includes(m[p.name])) score -= 40;
+  const recentCats = state.meals
+    .filter(ml=>{ const d=new Date(); d.setDate(d.getDate()-5); return new Date(ml.date)>=d; })
+    .map(ml=>ml.cat);
+  if(recentCats.includes(m[p.cat])) score -= 15;
+  if(m[p.dislike]>=4) score -= 10;
+
+  // 예산
+  if(m[p.price] > (state.prefs.budget+1)) score -= 30;
+
+  // 금기
+  const excl = state.prefs.excluded||[];
+  const mText = (m[p.name]+(m[p.cat]||'')).toLowerCase();
+  for(const e of excl) {
+    if(mText.includes(e.replace('(글루텐)','').toLowerCase())) { score = -999; break; }
+  }
+
+  return Math.max(0, Math.min(100, Math.round(score*10)/10));
+}
+
+function generateReason(m, ctx, answers) {
+  const n = m[IDX.name];
+  const h = ctx.hour;
+  if(ctx.hangover && m[IDX.hangover]>=4) return `숙취 해소엔 ${n}이 최고예요. 속이 편안해질 거예요.`;
+  if(ctx.weather==='rainy' && m[IDX.soupy]>=4) return `비 오는 날 뜨끈한 ${n} 한 그릇이 최고예요.`;
+  if(ctx.temp!==undefined && ctx.temp<10 && m[IDX.cold]>=4) return `추운 날씨에 ${n}으로 몸을 따뜻하게 녹여보세요.`;
+  if((h>=22||h<4) && m[IDX.latenight]>=4) return `야심한 밤에 ${n}이 가장 잘 어울려요.`;
+  if(ctx.temp!==undefined && ctx.temp>28 && m[IDX.hot]>=4) return `더운 날 시원하게 즐길 수 있는 ${n}이에요.`;
+  if(answers.solo===true && m[IDX.solo]>=4) return `혼자서도 부담 없이 즐기기 딱 좋은 ${n}이에요.`;
+  if(answers.emotion==='comfort' && m[IDX.comfort]>=4) return `지친 마음을 달래줄 포근한 ${n}이에요.`;
+  if(answers.emotion==='stimulate' && m[IDX.stim]>=4) return `자극이 필요할 땐 ${n}이죠. 기분 전환 확실해요.`;
+  if(answers.emotion==='healthy' && m[IDX.diet]>=4) return `건강을 생각한다면 ${n}이 딱이에요.`;
+  if(answers.emotion==='hearty' && m[IDX.full]>=4) return `든든하게 채우려면 ${n}이 최고예요.`;
+  if(answers.hungry==='light' && m[IDX.light]>=4) return `부담 없이 가볍게 즐길 수 있는 ${n}이에요.`;
+  return `지금 상황과 취향을 분석한 결과, ${n}이 가장 후회 없는 선택이에요.`;
+}
+
+function generateTags(m, ctx, answers) {
+  const t = [];
+  t.push(m[IDX.cat]);
+  if(m[IDX.soupy]>=4) t.push('국물');
+  if(m[IDX.spicy]>=4) t.push('매운맛');
+  if(m[IDX.spicy]<=1) t.push('순한맛');
+  if(m[IDX.full]>=4) t.push('든든');
+  if(m[IDX.light]>=4) t.push('가벼운');
+  if(m[IDX.solo]>=4) t.push('혼밥추천');
+  if(m[IDX.latenight]>=4) t.push('야식');
+  if(m[IDX.hangover]>=4) t.push('해장');
+  if(m[IDX.diet]>=4) t.push('다이어트');
+  if(m[IDX.price]<=2) t.push('가성비');
+  return t.slice(0,5);
+}
+
+function runRecommend(answers) {
+  const now = new Date();
+  const ctx = {
+    hour: now.getHours(),
+    weather: state.weatherEmoji.includes('🌧')? 'rainy': state.weatherEmoji.includes('❄')? 'snowy':'sunny',
+    hangover: answers.situation==='hangover',
+    temp: undefined,
+  };
+  if(answers.situation==='latenight') ctx.hour = 23;
+  if(answers.situation==='rainy') ctx.weather='rainy';
+
+  const scored = MENUS.map(m=>{
+    const s = scoreMenu(m, ctx, answers);
+    return { m, s };
+  }).filter(x=>x.s>0).sort((a,b)=>b.s-a.s);
+
+  const top = scored.slice(0,5);
+  if(!top.length) return null;
+
+  const makeItem = ({m,s}) => ({
+    id: m[IDX.id],
+    name: m[IDX.name],
+    cat: m[IDX.cat],
+    sub: m[IDX.sub],
+    score: s,
+    reason: generateReason(m, ctx, answers),
+    price: PRICE_LABEL[m[IDX.price]]||'',
+    tags: generateTags(m, ctx, answers),
+    emoji: CAT_EMOJI[m[IDX.cat]]||'🍽️',
+  });
+
+  return { main: makeItem(top[0]), candidates: top.slice(1,4).map(makeItem) };
+}
+
+// ════════════════════════════════════════════════════════════════
+// 화면 전환
+// ════════════════════════════════════════════════════════════════
+const screenStack = [];
+
+function showScreen(id, push=true) {
+  const all = document.querySelectorAll('.screen');
+  const target = document.getElementById(id);
+  if(!target) return;
+
+  if(push && state.currentScreen !== id) screenStack.push(state.currentScreen);
+
+  const isTab = ['home-screen','record-screen','pref-screen'].includes(id);
+  const tabBar = document.getElementById('tab-bar');
+
+  all.forEach(s=>{
+    if(s.id===id){ s.classList.add('active'); s.classList.remove('prev'); }
+    else if(s.classList.contains('active')){ s.classList.remove('active'); if(!isTab) s.classList.add('prev'); }
+    else { s.classList.remove('prev'); }
+  });
+  state.currentScreen = id;
+
+  if(tabBar) tabBar.style.display = isTab?'flex':'none';
+}
+
+function goBack() {
+  if(screenStack.length>0) {
+    const prev = screenStack.pop();
+    showScreen(prev, false);
+  }
+}
+
+function switchTab(tab) {
+  const map = {home:'home-screen', record:'record-screen', pref:'pref-screen'};
+  ['tab-home','tab-record','tab-pref'].forEach(t=>{
+    document.getElementById(t)?.classList.remove('active');
+  });
+  document.getElementById('tab-'+tab)?.classList.add('active');
+  screenStack.length = 0;
+  if(tab==='record') renderRecordScreen();
+  if(tab==='pref') syncPrefScreen();
+  showScreen(map[tab], false);
+}
+
+// ════════════════════════════════════════════════════════════════
+// 온보딩
+// ════════════════════════════════════════════════════════════════
+function obNext() {
+  if(state.obStep < 2) {
+    document.getElementById('ob-slide-'+state.obStep).style.display='none';
+    state.obStep++;
+    const slide2 = document.getElementById('ob-slide-2');
+    if(state.obStep===2) slide2.style.display='flex';
+    else document.getElementById('ob-slide-'+state.obStep).style.display='flex';
+    document.getElementById('ob-next-btn').textContent = state.obStep===2 ? '시작하기 🍽️' : '다음 →';
+  } else {
+    finishOnboarding();
+  }
+}
+
+function finishOnboarding() {
+  saveState();
+  state.onboarded = true;
+  initHomeScreen();
+  showScreen('home-screen', false);
+  document.getElementById('tab-bar').style.display='flex';
+}
+
+function selectSpicy(el) {
+  document.querySelectorAll('#onboarding .spicy-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state.prefs.spicy = parseInt(el.dataset.val);
+}
+function selectBudget(el) {
+  document.querySelectorAll('#onboarding .toggle-row:nth-child(4) .toggle-btn').forEach(b=>b.classList.remove('active'));
+  // 더 안전하게 처리
+  el.parentNode.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state.prefs.budget = parseInt(el.dataset.val);
+}
+function selectEatingStyle(el) {
+  el.parentNode.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state.prefs.solo = el.dataset.val==='solo';
+}
+function selectDiet(el) {
+  el.parentNode.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state.prefs.diet = el.dataset.val==='yes';
+}
+function toggleExclude(el) {
+  el.classList.toggle('active');
+  const name = el.textContent.trim();
+  if(el.classList.contains('active')) {
+    if(!state.prefs.excluded.includes(name)) state.prefs.excluded.push(name);
+  } else {
+    state.prefs.excluded = state.prefs.excluded.filter(e=>e!==name);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// 홈 화면
+// ════════════════════════════════════════════════════════════════
+function initHomeScreen() {
+  // 날씨/시간 정보
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h<6?'새벽이에요':h<11?'좋은 아침이에요':h<14?'점심 시간이에요':h<18?'오후에요':h<22?'저녁이에요':'야심한 밤이에요';
+  document.getElementById('weather-info').textContent = greet+' · 메뉴 추천 준비 완료!';
+
+  // 운명 메뉴
+  const FATE = [
+    {name:'된장찌개',emoji:'🍲',msg:'비 온 뒤 땅이 굳듯, 오늘은 된장이 정답이에요'},
+    {name:'후라이드치킨',emoji:'🍗',msg:'치킨은 언제나 옳습니다. 오늘이 바로 그날이에요'},
+    {name:'짜장면',emoji:'🍜',msg:'검은 소스의 유혹, 오늘은 거스를 수 없어요'},
+    {name:'삼겹살',emoji:'🥩',msg:'오늘은 고기의 날. 불판 위의 운명이 당신을 부릅니다'},
+    {name:'칼국수',emoji:'🍜',msg:'손으로 빚은 따뜻함이 오늘 당신에게 필요해요'},
+    {name:'김밥',emoji:'🌯',msg:'심플하지만 확실한 선택. 오늘의 운명은 김밥이에요'},
+    {name:'파스타',emoji:'🍝',msg:'오늘은 이탈리안 무드. 운명이 부릅니다'},
+    {name:'삼계탕',emoji:'🍲',msg:'몸이 먼저 알고 있어요. 오늘은 보양식이 필요해요'},
+  ];
+  const fate = FATE[now.getDate()%FATE.length];
+  document.getElementById('fate-emoji').textContent = fate.emoji;
+  document.getElementById('fate-name').textContent = fate.name;
+  document.getElementById('fate-msg').textContent = fate.msg;
+
+  renderHistoryRow();
+  // 날씨 API (실패해도 무방)
+  getWeather();
+}
+
+async function getWeather() {
+  try {
+    if(!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const key = 'OPENWEATHER_KEY'; // 사용자가 입력 필요
+      if(key==='OPENWEATHER_KEY') return;
+      const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&appid=${key}&units=metric`);
+      const d = await r.json();
+      const id = d.weather?.[0]?.id||800;
+      let we = '🌤️';
+      if(id>=200&&id<600) we='🌧️';
+      else if(id>=600&&id<700) we='❄️';
+      else if(id>800) we='☁️';
+      const temp = Math.round(d.main?.temp||20);
+      state.weatherEmoji = we;
+      document.getElementById('weather-emoji').textContent = we;
+      document.getElementById('weather-info').textContent = `${temp}°C · 메뉴 추천 준비 완료!`;
+    });
+  } catch(e){}
+}
+
+function renderHistoryRow() {
+  if(!state.history.length) return;
+  document.getElementById('history-section').style.display='block';
+  const scroll = document.getElementById('history-scroll');
+  scroll.innerHTML = state.history.slice(0,6).map(h=>`
+    <div class="history-card">
+      <span class="he">${h.emoji||'🍽️'}</span>
+      <span class="hn">${h.name}</span>
+      <span class="hd">${h.date||''}</span>
+    </div>
+  `).join('');
+}
+
+function dismissFate() { document.getElementById('fate-section').style.display='none'; }
+function acceptFate() { goQuick(); }
+
+function goQuick() { startQuick({}); }
+function goQuickEmotion(emotion) { startQuick({emotion}); }
+function goQuickSituation(sit) { startQuick({situation:sit}); }
+function goTournament() {
+  document.getElementById('t-body').innerHTML=`
+    <div class="t-intro">
+      <div class="ti-emoji">⚔️</div>
+      <div class="ti-title">메뉴 토너먼트</div>
+      <div class="ti-desc">2개씩 비교해서 고르다 보면<br>최종 오늘의 메뉴가 결정돼요!</div>
+      <button class="btn-primary" style="max-width:240px;margin-top:20px;" onclick="startTournament()">토너먼트 시작! ⚔️</button>
+    </div>`;
+  document.getElementById('t-round-label').textContent='ROUND ?';
+  document.getElementById('t-dots').innerHTML='';
+  showScreen('tournament-screen');
+}
+
+// ════════════════════════════════════════════════════════════════
+// 빠른 추천 질문
+// ════════════════════════════════════════════════════════════════
+const QUESTIONS = [
+  { id:'solo', text:'지금 혼자 드세요?', sub:'함께하는 분에 따라 추천이 달라져요',
+    opts:[{e:'🧍',l:'혼자서',d:'혼밥 최적화',v:true},{e:'👫',l:'둘이서',d:'2인 메뉴',v:false},{e:'👥',l:'셋 이상',d:'단체 메뉴',v:false}]},
+  { id:'hungry', text:'얼마나 배고프세요?', sub:'배고픔 정도로 양을 맞춰드려요',
+    opts:[{e:'🥗',l:'간단히',d:'가볍고 부담 없게',v:'light'},{e:'🍱',l:'적당히',d:'딱 알맞은 한 끼',v:'medium'},{e:'🍖',l:'든든하게',d:'배부르게',v:'heavy'}]},
+  { id:'soup', text:'국물이 당기나요?', sub:'기분에 따라 골라보세요',
+    opts:[{e:'🍲',l:'국물 있으면 좋겠어',d:'찌개·탕·국밥',v:true},{e:'🍳',l:'없어도 괜찮아',d:'볶음·구이·면',v:false},{e:'🤷',l:'상관없어',d:'뭐든 OK',v:null}], skip:true},
+  { id:'spicy', text:'매운 건 어때요?', sub:'오늘의 자극 강도를 선택해주세요',
+    opts:[{e:'🌶️',l:'매운 거',d:'얼큰·자극적',v:'spicy'},{e:'😌',l:'순한 거',d:'담백·순한 맛',v:'mild'},{e:'🆗',l:'상관없어',d:'맵든 안 맵든',v:'any'}], skip:true},
+  { id:'budget', text:'예산은요?', sub:'가격대에 맞춰 추천드려요',
+    opts:[{e:'💰',l:'1만원 이하',d:'가성비 한 끼',v:1},{e:'💳',l:'1~2만원',d:'적당한 가격',v:2},{e:'✨',l:'상관없어',d:'제한 없음',v:3}], skip:true},
+];
+
+let qStep = 0;
+let qAnswers = {};
+
+function startQuick(initialAnswers) {
+  qStep = 0;
+  qAnswers = Object.assign({}, initialAnswers);
+  renderQuestion();
+  showScreen('quick-screen');
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[qStep];
+  const pct = ((qStep+1)/QUESTIONS.length*100)+'%';
+  document.getElementById('q-progress').style.width = pct;
+  document.getElementById('q-label').textContent = `${qStep+1} / ${QUESTIONS.length}`;
+  document.getElementById('q-tag').textContent = `Q${qStep+1}`;
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('q-sub').textContent = q.sub||'';
+  document.getElementById('skip-btn').style.display = q.skip?'block':'none';
+
+  const container = document.getElementById('opts-container');
+  container.innerHTML = q.opts.map((opt,idx)=>`
+    <button class="opt-btn${qAnswers[q.id]===opt.v?' selected':''}" onclick="selectOptIdx(${idx})">
+      <span class="opt-emoji">${opt.e}</span>
+      <div class="opt-text">
+        <div class="opt-label">${opt.l}</div>
+        <div class="opt-desc">${opt.d}</div>
+      </div>
+      <div class="opt-check">${qAnswers[q.id]===opt.v?'✓':''}</div>
+    </button>
+  `).join('');
+}
+
+function selectOptIdx(idx) {
+  const q = QUESTIONS[qStep];
+  selectOpt(q.opts[idx].v);
+}
+
+function selectOpt(val) {
+  const q = QUESTIONS[qStep];
+  qAnswers[q.id] = val;
+  renderQuestion();
+  setTimeout(()=>advanceQuestion(), 180);
+}
+
+function skipQuestion() { advanceQuestion(); }
+
+function advanceQuestion() {
+  if(qStep < QUESTIONS.length-1) {
+    qStep++;
+    renderQuestion();
+  } else {
+    doRecommend();
+  }
+}
+
+function doRecommend() {
+  showLoading();
+  setTimeout(()=>{
+    const result = runRecommend(qAnswers);
+    hideLoading();
+    if(!result) { showToast('추천할 메뉴를 찾지 못했어요. 다시 시도해주세요.'); goBack(); return; }
+    state.currentResult = result;
+    state.currentAnswers = {...qAnswers};
+    // 히스토리 저장
+    state.history.unshift({ name:result.main.name, emoji:result.main.emoji, date:new Date().toLocaleDateString('ko-KR',{month:'short',day:'numeric'}) });
+    state.history = state.history.slice(0,20);
+    saveState();
+    renderResultScreen(result);
+    showScreen('result-screen');
+  }, 1200);
+}
+
+function retryRecommend() { goBack(); }
+
+// ════════════════════════════════════════════════════════════════
+// 추천 결과 화면
+// ════════════════════════════════════════════════════════════════
+function renderResultScreen(result) {
+  const m = result.main;
+  document.getElementById('r-emoji').textContent = m.emoji;
+  document.getElementById('r-name').textContent = m.name;
+  document.getElementById('r-category').textContent = m.cat+(m.sub?` · ${m.sub}`:'');
+  document.getElementById('r-reason').textContent = m.reason;
+  document.getElementById('r-price').textContent = m.price;
+  document.getElementById('r-score').textContent = Math.round(m.score)+'점';
+  document.getElementById('r-tags').innerHTML = m.tags.map(t=>`<span class="tag-chip">#${t}</span>`).join('');
+
+  // 후보
+  const cc = document.getElementById('candidates-container');
+  cc.innerHTML = result.candidates.map((c,i)=>`
+    <div class="cand-card" onclick="swapMain(${i})">
+      <span class="cand-rank">#${i+2}</span>
+      <span class="cand-emoji">${c.emoji}</span>
+      <div class="cand-info">
+        <div class="cand-name">${c.name}</div>
+        <div class="cand-cat">${c.cat}</div>
+        <div class="cand-reason">${c.reason}</div>
+      </div>
+      <div class="cand-score"><div class="cand-score-num">${Math.round(c.score)}</div><div class="cand-score-unit">점</div></div>
+      <span>›</span>
+    </div>
+  `).join('');
+
+  // 피드백 초기화
+  document.getElementById('fb-title').textContent = '먹어보셨나요?';
+  [1,2,3].forEach(r=>{
+    const b = document.getElementById('fb-'+r);
+    b.className='fb-btn';
+  });
+}
+
+function swapMain(idx) {
+  const r = state.currentResult;
+  const old = r.main;
+  const newMain = r.candidates[idx];
+  r.candidates[idx] = old;
+  r.main = newMain;
+  renderResultScreen(r);
+  showToast('메인 메뉴가 변경됐어요!');
+}
+
+function decideMenu() {
+  const name = state.currentResult?.main?.name;
+  if(!name) return;
+  showToast(`${name} 결정! 맛있게 드세요 🎉`);
+  // 식사 기록에 추가 제안
+  setTimeout(()=>{
+    const add = confirm(`"${name}"을(를) 오늘 식사 기록에 추가할까요?`);
+    if(add) {
+      state.meals.push({ name, cat:state.currentResult.main.cat, date:todayStr(), type:autoMealType(), sat:3 });
+      saveState();
+      showToast('식사 기록에 추가됐어요!');
+    }
+    screenStack.length=0;
+    showScreen('home-screen',false);
+    switchTab('home');
+  }, 400);
+}
+
+function giveFeedback(rating) {
+  const classes = {3:'selected-good', 2:'selected-neutral', 1:'selected-bad'};
+  [1,2,3].forEach(r=>document.getElementById('fb-'+r).className='fb-btn');
+  document.getElementById('fb-'+rating).className='fb-btn '+classes[rating];
+  document.getElementById('fb-title').textContent = '피드백 감사해요! 더 잘 추천해드릴게요 🙏';
+  // 취향 학습 (간단 버전)
+  if(rating===1) {
+    // 싫어요 → 해당 카테고리 약간 불이익 (실제 구현은 prefs에 저장)
+  }
+  saveState();
+  vibrate();
+}
+
+function shareResult() {
+  const m = state.currentResult?.main;
+  if(!m) return;
+  const text = `오늘 메뉴 결정! 🍽️\n"${m.name}" 어때요?\n${m.reason}\n\n#지금뭐먹지`;
+  if(navigator.share) {
+    navigator.share({ title:'지금 뭐먹지', text });
+  } else {
+    navigator.clipboard?.writeText(text).then(()=>showToast('클립보드에 복사됐어요!'));
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// 토너먼트
+// ════════════════════════════════════════════════════════════════
+function startTournament() {
+  const result = runRecommend(qAnswers.emotion?qAnswers:{});
+  // 8개 후보 생성
+  const now = new Date();
+  const ctx = { hour:now.getHours(), weather:'sunny' };
+  const scored = MENUS.map(m=>({m,s:scoreMenu(m,ctx,{hungry:'medium',spicy:'any',soup:null})}))
+    .filter(x=>x.s>10).sort((a,b)=>b.s-a.s).slice(0,8);
+
+  if(scored.length<2) { showToast('메뉴가 부족해요.'); return; }
+  state.tCandidates = scored.map(x=>x.m);
+  state.tRound = 1;
+  state.tTotal = Math.ceil(Math.log2(state.tCandidates.length));
+  state.tWinnersAll = [];
+  renderTournamentRound();
+}
+
+function renderTournamentRound() {
+  if(state.tCandidates.length===1) {
+    const winner = state.tCandidates[0];
+    const emoji = CAT_EMOJI[winner[IDX.cat]]||'🍽️';
+    document.getElementById('t-round-label').textContent='최종 결정!';
+    document.getElementById('t-dots').innerHTML='';
+    document.getElementById('t-body').innerHTML=`
+      <div class="t-finish" style="width:100%;">
+        <div class="t-trophy">🏆</div>
+        <div class="t-finish-title">최종 결정!</div>
+        <div class="t-finish-card">
+          <div class="fe">${emoji}</div>
+          <div class="fn">${winner[IDX.name]}</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px;">${winner[IDX.cat]}</div>
+          <div class="fr">${generateReason(winner,{hour:new Date().getHours(),weather:'sunny'},{hungry:'medium'})}</div>
+        </div>
+        <button class="btn-primary" style="margin-top:4px;" onclick="goHomeFromTournament()">홈으로 돌아가기</button>
+      </div>`;
+    vibrate(200);
+    return;
+  }
+
+  // 다음 매치업
+  const left = state.tCandidates[0];
+  const right = state.tCandidates[1];
+  const le = CAT_EMOJI[left[IDX.cat]]||'🍽️';
+  const re = CAT_EMOJI[right[IDX.cat]]||'🍽️';
+
+  // 진행 도트
+  document.getElementById('t-round-label').textContent=`ROUND ${state.tRound}`;
+  const dots = document.getElementById('t-dots');
+  dots.innerHTML=Array.from({length:state.tTotal},(_, i)=>`<div class="t-dot${i<state.tRound?' done':''}"></div>`).join('');
+
+  document.getElementById('t-body').innerHTML=`
+    <div class="t-instruction">어떤 게 더 당겨요?</div>
+    <div class="t-vs-row">
+      <div class="t-card" id="tc-left" onclick="pickTournament('left')">
+        <span class="tc-emoji">${le}</span>
+        <div class="tc-name">${left[IDX.name]}</div>
+        <div class="tc-cat">${left[IDX.cat]}</div>
+        <div class="tc-price">${PRICE_LABEL[left[IDX.price]]||''}</div>
+      </div>
+      <div class="t-vs-badge">VS</div>
+      <div class="t-card" id="tc-right" onclick="pickTournament('right')">
+        <span class="tc-emoji">${re}</span>
+        <div class="tc-name">${right[IDX.name]}</div>
+        <div class="tc-cat">${right[IDX.cat]}</div>
+        <div class="tc-price">${PRICE_LABEL[right[IDX.price]]||''}</div>
+      </div>
+    </div>`;
+}
+
+function pickTournament(side) {
+  const winner = side==='left'? state.tCandidates[0] : state.tCandidates[1];
+  const loser  = side==='left'? state.tCandidates[1] : state.tCandidates[0];
+
+  // 승자 카드 애니메이션
+  document.getElementById('tc-'+side)?.classList.add('winner');
+  document.getElementById(side==='left'?'tc-right':'tc-left')?.classList.add('loser');
+
+  setTimeout(()=>{
+    // 패자 제거, 승자 맨 뒤로
+    state.tCandidates = state.tCandidates.filter((_,i)=>i>1);
+    state.tCandidates.push(winner);
+    state.tRound++;
+    renderTournamentRound();
+  }, 500);
+  vibrate();
+}
+
+function goHomeFromTournament() {
+  screenStack.length=0;
+  showScreen('home-screen',false);
+  switchTab('home');
+}
+
+// ════════════════════════════════════════════════════════════════
+// 식사 기록
+// ════════════════════════════════════════════════════════════════
+const MEAL_TYPE_INFO = {
+  breakfast:{e:'🌅',l:'아침'}, lunch:{e:'☀️',l:'점심'},
+  dinner:{e:'🌙',l:'저녁'}, late_night:{e:'🦉',l:'야식'}
+};
+const SAT_INFO = {3:{e:'😋',l:'맛있었어',c:'good'}, 2:{e:'😐',l:'그냥먹었어',c:'neutral'}, 1:{e:'😤',l:'괜히먹었어',c:'bad'}};
+
+function renderRecordScreen() {
+  renderWeekBar();
+  renderMealList();
+}
+
+function renderWeekBar() {
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate()-((today.getDay()||7)-1));
+  const bar = document.getElementById('week-bar');
+  const days=['월','화','수','목','금','토','일'];
+  bar.innerHTML = Array.from({length:7},(_,i)=>{
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const dStr = d.toISOString().split('T')[0];
+    const isToday = dStr===todayStr();
+    const isSel = dStr===state.selectedDate;
+    const hasMeal = state.meals.some(m=>m.date===dStr);
+    return `<div class="day-cell${isToday?' today':''}${isSel?' selected':''}" onclick="selectDate('${dStr}')">
+      <div class="day-name">${days[i]}</div>
+      <div class="day-num">${d.getDate()}</div>
+      ${hasMeal?`<div class="meal-dot-r"></div>`:'<div style="height:5px;"></div>'}
+    </div>`;
+  }).join('');
+}
+
+function selectDate(dStr) {
+  state.selectedDate = dStr;
+  renderWeekBar();
+  renderMealList();
+}
+
+function renderMealList() {
+  const today = todayStr();
+  const isToday = state.selectedDate===today;
+  const label = isToday ? '오늘' : (() => {
+    const d = new Date(state.selectedDate);
+    return `${d.getMonth()+1}월 ${d.getDate()}일`;
+  })();
+  document.getElementById('selected-date-label').textContent = label;
+
+  const dayMeals = state.meals.filter(m=>m.date===state.selectedDate);
+  document.getElementById('meal-count-badge').textContent = dayMeals.length+'끼';
+
+  const list = document.getElementById('meal-list');
+  if(!dayMeals.length) {
+    list.innerHTML=`<div class="empty-state">
+      <div class="empty-emoji">🍽️</div>
+      <div class="empty-title">${isToday?'오늘은 아직 기록이 없어요':'이날은 기록이 없어요'}</div>
+      ${isToday?`<div class="empty-desc">지금 먹은 메뉴를 기록해보세요!</div>
+      <div class="empty-add-btn" onclick="openAddModal()">+ 식사 기록 추가</div>`:''}
+    </div>`;
+    return;
+  }
+  list.innerHTML = dayMeals.map((meal,idx)=>{
+    const ti = MEAL_TYPE_INFO[meal.type]||{e:'🍽️',l:'식사'};
+    const si = SAT_INFO[meal.sat]||SAT_INFO[2];
+    return `<div class="meal-item">
+      <span class="meal-type-emoji">${ti.e}</span>
+      <div class="meal-item-info">
+        <div class="meal-item-name">${meal.name}</div>
+        <div class="meal-item-meta">${ti.l} · ${si.e} ${si.l}</div>
+      </div>
+      <button class="meal-delete" onclick="deleteMeal(${idx})">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteMeal(idx) {
+  const dayMeals = state.meals.filter(m=>m.date===state.selectedDate);
+  const targetMeal = dayMeals[idx];
+  if(!targetMeal) return;
+  if(!confirm(`"${targetMeal.name}" 기록을 삭제할까요?`)) return;
+  const globalIdx = state.meals.findIndex(m=>m===targetMeal);
+  if(globalIdx>-1) state.meals.splice(globalIdx,1);
+  saveState();
+  renderRecordScreen();
+  showToast('삭제됐어요.');
+}
+
+// ── 식사 추가 모달 ─────────────────────────────
+function openAddModal() {
+  document.getElementById('meal-name-input').value='';
+  document.getElementById('meal-suggestions').style.display='none';
+  state.addModalMealType = autoMealType();
+  state.addModalSat = 3;
+  // 식사 타입 버튼 초기화
+  document.querySelectorAll('#meal-type-btns .toggle-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.val===state.addModalMealType);
+  });
+  // 만족도 버튼
+  [1,2,3].forEach(r=>{ document.getElementById('sat-'+r).className='sat-btn'+(r===3?' active-good':''); });
+  document.getElementById('add-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('meal-name-input').focus(), 200);
+}
+
+function closeAddModal() {
+  document.getElementById('add-modal').classList.add('hidden');
+  document.getElementById('meal-suggestions').style.display='none';
+}
+
+function onMealNameInput(val) {
+  const sug = document.getElementById('meal-suggestions');
+  if(val.length<2) { sug.style.display='none'; return; }
+  const matches = MENUS.filter(m=>m[IDX.name].includes(val)).slice(0,5);
+  if(!matches.length) { sug.style.display='none'; return; }
+  sug.style.display='block';
+  sug.innerHTML = matches.map(m=>`<div class="suggestion-item" onclick="pickSuggestion('${m[IDX.name]}')">${m[IDX.name]} <span style="font-size:11px;color:var(--text3);">${m[IDX.cat]}</span></div>`).join('');
+}
+
+function pickSuggestion(name) {
+  document.getElementById('meal-name-input').value = name;
+  document.getElementById('meal-suggestions').style.display='none';
+}
+
+function selectMealType(el) {
+  document.querySelectorAll('#meal-type-btns .toggle-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state.addModalMealType = el.dataset.val;
+}
+
+function selectSat(r) {
+  [1,2,3].forEach(n=>{ document.getElementById('sat-'+n).className='sat-btn'; });
+  const cls = r===3?'active-good':r===2?'active-neutral':'active-bad';
+  document.getElementById('sat-'+r).className='sat-btn '+cls;
+  state.addModalSat = r;
+}
+
+function saveNewMeal() {
+  const name = document.getElementById('meal-name-input').value.trim();
+  if(!name) { showToast('메뉴 이름을 입력해주세요.'); return; }
+  const menu = MENUS.find(m=>m[IDX.name]===name);
+  state.meals.push({
+    name, cat:menu?menu[IDX.cat]:'기타',
+    date:state.selectedDate,
+    type:state.addModalMealType,
+    sat:state.addModalSat
+  });
+  saveState();
+  closeAddModal();
+  renderRecordScreen();
+  vibrate();
+  showToast('식사 기록이 추가됐어요!');
+}
+
+// ════════════════════════════════════════════════════════════════
+// 취향 관리
+// ════════════════════════════════════════════════════════════════
+function syncPrefScreen() {
+  // 맵기
+  document.querySelectorAll('#pref-spicy-row .spicy-btn').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.val)===state.prefs.spicy);
+  });
+  // 예산
+  document.querySelectorAll('#pref-budget-row .toggle-btn').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.val)===state.prefs.budget);
+  });
+  // 혼밥
+  document.querySelectorAll('#pref-solo-row .toggle-btn').forEach(b=>{
+    b.classList.toggle('active', (b.dataset.val==='solo')===state.prefs.solo);
+  });
+  // 다이어트
+  document.getElementById('pref-diet-toggle').checked = state.prefs.diet;
+  // 금기
+  document.querySelectorAll('#pref-exclude-grid .exclude-chip').forEach(chip=>{
+    chip.classList.toggle('active', state.prefs.excluded.includes(chip.textContent.trim()));
+  });
+}
+
+function prefSelectSpicy(el) {
+  document.querySelectorAll('#pref-spicy-row .spicy-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state.prefs.spicy = parseInt(el.dataset.val);
+}
+function prefSelectBudget(el) {
+  document.querySelectorAll('#pref-budget-row .toggle-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state.prefs.budget = parseInt(el.dataset.val);
+}
+function prefSelectSolo(el) {
+  document.querySelectorAll('#pref-solo-row .toggle-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  state.prefs.solo = el.dataset.val==='solo';
+}
+function prefToggleDiet(el) { state.prefs.diet = el.checked; }
+function prefToggleExclude(el) {
+  el.classList.toggle('active');
+  const name = el.textContent.trim();
+  if(el.classList.contains('active')) {
+    if(!state.prefs.excluded.includes(name)) state.prefs.excluded.push(name);
+  } else {
+    state.prefs.excluded = state.prefs.excluded.filter(e=>e!==name);
+  }
+}
+function savePreferences() {
+  saveState();
+  showToast('취향이 저장됐어요! 더 정확하게 추천해드릴게요 ✓');
+  vibrate();
+}
+
+function resetApp() {
+  if(!confirm('모든 데이터가 삭제됩니다. 계속하시겠어요?')) return;
+  localStorage.removeItem('jwmj_v2');
+  location.reload();
+}
+
+// ════════════════════════════════════════════════════════════════
+// 유틸
+// ════════════════════════════════════════════════════════════════
+function showLoading() { document.getElementById('loading').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+function vibrate(ms=40) {
+  try{ if(navigator.vibrate) navigator.vibrate(ms); } catch(e){}
+}
+
+// ════════════════════════════════════════════════════════════════
+// 초기화
+// ════════════════════════════════════════════════════════════════
+function init() {
+  loadState();
+  if(state.onboarded) {
+    initHomeScreen();
+    syncPrefScreen();
+    showScreen('home-screen', false);
+    document.getElementById('tab-bar').style.display='flex';
+  } else {
+    showScreen('onboarding', false);
+    document.getElementById('tab-bar').style.display='none';
+  }
+}
+
+// 뒤로가기 (Android)
+window.addEventListener('popstate', e=>{
+  e.preventDefault();
+  goBack();
+});
+history.pushState({}, '');
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
