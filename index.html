@@ -16,9 +16,9 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);}
 #app{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative;overflow:hidden;}
-.screen{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow:hidden;}
-.screen.active{transform:translateX(0);}
-.screen.prev{transform:translateX(-30%);}
+.screen{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow:hidden;z-index:1;}
+.screen.active{transform:translateX(0);z-index:10;}
+.screen.prev{transform:translateX(-30%);z-index:5;}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .pad{padding:0 16px;}
  
@@ -2033,16 +2033,14 @@ function swapMain(idx) {
 function decideMenu() {
   const main = state.currentResult?.main;
   if(!main) return;
-  // 식사 기록 저장
   const mealType = autoMealType();
   const mealTypeLabel = {breakfast:'아침',lunch:'점심',dinner:'저녁',late_night:'야식'}[mealType];
   const newMeal = { id:Date.now(), name:main.name, cat:main.cat,
     date:todayStr(), type:mealType, sat:null, emoji:main.emoji||'🍽️' };
   state.meals.unshift(newMeal);
   saveState();
-  showToast(`"${main.name}" 결정! 주변 식당 찾는 중... 🗺️`);
-  // 지도 화면으로 이동
-  openMapScreen(main.name);
+  showToast('"'+main.name+'" 결정! 🎉');
+  setTimeout(function(){ openMapScreen(main.name); }, 500);
 }
  
 // ── 지도 화면 ─────────────────────────────────────
@@ -2056,16 +2054,25 @@ function openMapScreen(menuName) {
   mapMenuName = menuName;
   mapRadiusIdx = state.prefs.radiusIdx !== undefined ? state.prefs.radiusIdx : 2;
  
-  document.getElementById('map-screen-title').textContent = '"'+menuName+'" 주변 식당';
-  document.getElementById('map-screen-sub').textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
-  document.getElementById('map-radius-slider').value = mapRadiusIdx;
-  document.getElementById('map-radius-label').textContent = RADIUS_LABS[mapRadiusIdx];
-  document.getElementById('map-place-list').innerHTML =
+  const _title = document.getElementById('map-screen-title');
+  const _sub = document.getElementById('map-screen-sub');
+  const _slider = document.getElementById('map-radius-slider');
+  const _label = document.getElementById('map-radius-label');
+  const _list = document.getElementById('map-place-list');
+  if(_title) _title.textContent = '"'+menuName+'" 주변 식당';
+  if(_sub) _sub.textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
+  if(_slider) _slider.value = mapRadiusIdx;
+  if(_label) _label.textContent = RADIUS_LABS[mapRadiusIdx];
+  if(_list) _list.innerHTML =
     '<div style="display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:12px;text-align:center;">' +
     '<div style="width:36px;height:36px;border:3px solid #eee;border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;"></div>' +
     '<div style="font-size:14px;font-weight:700;color:var(--text2);">위치 확인 중...</div></div>';
  
-  showScreen('map-screen');
+  try {
+    showScreen('map-screen');
+  } catch(e) {
+    console.error('showScreen map-screen error:', e);
+  }
  
   // 카카오맵 초기화 후 탐색
   setTimeout(function(){
@@ -2594,16 +2601,14 @@ function swapMain(idx) {
 function decideMenu() {
   const main = state.currentResult?.main;
   if(!main) return;
-  // 식사 기록 저장
   const mealType = autoMealType();
   const mealTypeLabel = {breakfast:'아침',lunch:'점심',dinner:'저녁',late_night:'야식'}[mealType];
   const newMeal = { id:Date.now(), name:main.name, cat:main.cat,
     date:todayStr(), type:mealType, sat:null, emoji:main.emoji||'🍽️' };
   state.meals.unshift(newMeal);
   saveState();
-  showToast(`"${main.name}" 결정! 주변 식당 찾는 중... 🗺️`);
-  // 지도 화면으로 이동
-  openMapScreen(main.name);
+  showToast('"'+main.name+'" 결정! 🎉');
+  setTimeout(function(){ openMapScreen(main.name); }, 500);
 }
  
 // ── 지도 화면 열기 ─────────────────────────────────
