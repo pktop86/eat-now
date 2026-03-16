@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="지금뭐먹지">
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services&autoload=false"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9933896132600937" crossorigin="anonymous"></script>
 <meta name="theme-color" content="#FF6B35">
 <title>지금 뭐먹지</title>
@@ -2028,10 +2028,8 @@ function renderResultScreen(result) {
  
   // 지도 초기화
   setTimeout(()=>{ if(typeof kakao!=='undefined') initKakaoMap(); }, 500);
-  // 지도 초기화
+  // 지도: 지도 탭에서 처리하므로 여기서는 메뉴명만 저장
   currentMenuName = m.name;
-  document.getElementById('map-section').style.display = 'none';
-  setTimeout(initKakaoMap, 800);
   // 피드백 초기화
   document.getElementById('fb-title').textContent = '먹어보셨나요?';
   [1,2,3].forEach(r=>{
@@ -2124,11 +2122,32 @@ function initMainMap(callback) {
     return;
   }
  
+  // autoload=false 방식: kakao.maps.load 콜백으로 초기화
+  function doLoad() {
+    kakao.maps.load(function(){
+      try {
+        mapObject = new kakao.maps.Map(container, {
+          center: new kakao.maps.LatLng(35.1796, 129.0756),
+          level: 5
+        });
+        setTimeout(function(){
+          try{ kakao.maps.event.trigger(mapObject,'resize'); }catch(e){}
+          if(callback) callback();
+        }, 300);
+      } catch(e) {
+        console.error('지도 생성 실패:', e.message);
+        if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;color:red;">❌ 지도 생성 실패: '+e.message+'</div>';
+      }
+    });
+  }
+ 
   function tryCreate() {
-    if(typeof kakao === 'undefined' || !kakao.maps) return false;
     try {
+      if(typeof kakao === 'undefined') return false;
+      if(!kakao.maps) return false;
+      if(!kakao.maps.Map) return false;
       mapObject = new kakao.maps.Map(container, {
-        center: new kakao.maps.LatLng(35.1796, 129.0756), // 부산 기본
+        center: new kakao.maps.LatLng(35.1796, 129.0756),
         level: 5
       });
       setTimeout(function(){
@@ -2137,9 +2156,14 @@ function initMainMap(callback) {
       }, 300);
       return true;
     } catch(e) {
-      console.error('지도 생성 오류:', e);
+      console.error('지도 생성 오류:', e.message);
       return false;
     }
+  }
+ 
+  if(typeof kakao !== 'undefined' && kakao.maps) {
+    doLoad();
+    return;
   }
  
   if(!tryCreate()) {
@@ -2147,10 +2171,14 @@ function initMainMap(callback) {
     if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px;">⏳ 카카오맵 로딩 중...</div>';
     const iv = setInterval(function(){
       t++;
-      if(tryCreate()) { clearInterval(iv); return; }
+      if(typeof kakao !== 'undefined' && kakao.maps) {
+        clearInterval(iv);
+        doLoad(); // kakao 로드됐으면 maps.load 방식으로
+        return;
+      }
       if(t > 15) {
         clearInterval(iv);
-        if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;">❌ 카카오맵 로딩 실패<br><br><b>카카오 개발자 콘솔 확인 필요</b><br>developers.kakao.com<br>→ 플랫폼 키 → JS SDK 도메인<br><b>https://pktop86.github.io</b> 저장 여부 확인</div>';
+        if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;">❌ 카카오 SDK 미로딩<br><br>developers.kakao.com<br>→ 플랫폼 키 → JS SDK 도메인<br><b>https://pktop86.github.io</b> 저장 여부 확인</div>';
       }
     }, 400);
   }
@@ -2434,154 +2462,11 @@ async function applyLocationFilter(result, answers) {
 // 카카오맵
 // ════════════════════════════════════════════════════════════════
  
-function initKakaoMap() {
-  const mapSec = document.getElementById('map-section');
-  const container = document.getElementById('kakao-map');
-  if(!container || !mapSec) return;
  
-  if(kakaoMap) { mapSec.style.display='block'; kakao.maps.relayout && kakao.maps.relayout(); return; }
  
-  if(typeof kakao === 'undefined') {
-    // 카카오 SDK 미로드 - 0.5초마다 최대 20번 재시도
-    let t=0;
-    const iv = setInterval(()=>{
-      t++;
-      if(typeof kakao!=='undefined' && kakao.maps){ clearInterval(iv); _createMap(); }
-      if(t>20) clearInterval(iv);
-    },500);
-    return;
-  }
-  _createMap();
-}
- 
-function _createMap() {
-  try {
-    const container = document.getElementById('kakao-map');
-    const mapSec = document.getElementById('map-section');
-    if(!container) return;
-    const center = new kakao.maps.LatLng(37.5665, 126.9780);
-    kakaoMap = new kakao.maps.Map(container, { center, level:4 });
-    mapSec.style.display = 'block';
-    setTimeout(()=>{
-      kakao.maps.event.trigger(kakaoMap,'resize');
-      // 위치 기반 추천으로 이미 nearbyPlaces 있으면 바로 표시
-      if(window._nearbyPlaces && window._nearbyPlaces.length > 0) {
-        showNearbyOnMap(window._nearbyPlaces);
-      }
-    }, 200);
-  } catch(e) { console.log('지도 생성 실패:', e); }
-}
  
 // nearbyPlaces를 지도에 바로 표시
-function showNearbyOnMap(places) {
-  if(!kakaoMap || !places || !places.length) return;
-  const list = document.getElementById('place-list');
-  const bounds = new kakao.maps.LatLngBounds();
-  if(list) list.innerHTML = '';
  
-  places.forEach((place, i) => {
-    const pos = new kakao.maps.LatLng(place.y, place.x);
-    bounds.extend(pos);
-    const marker = new kakao.maps.Marker({ map:kakaoMap, position:pos, title:place.place_name });
-    const iw = new kakao.maps.InfoWindow({
-      content: `<div style="padding:5px 8px;font-size:12px;white-space:nowrap;font-weight:700;">${place.place_name}</div>`
-    });
-    kakao.maps.event.addListener(marker,'click',()=>iw.open(kakaoMap,marker));
-    if(i===0) iw.open(kakaoMap,marker);
- 
-    if(list) {
-      const distM = place.distance ? parseInt(place.distance) : 0;
-      const distTxt = distM>=1000?(distM/1000).toFixed(1)+'km':distM+'m';
-      const item = document.createElement('div');
-      item.className='map-place-item';
-      item.innerHTML=`<div><div class="map-place-name">${place.place_name}</div>
-        <div class="map-place-addr">${place.road_address_name||place.address_name||''}</div></div>
-        <div class="map-place-dist">${distTxt}</div>`;
-      item.onclick=()=>{ kakaoMap.setCenter(pos); kakaoMap.setLevel(3); iw.open(kakaoMap,marker); };
-      list.appendChild(item);
-    }
-  });
-  kakaoMap.setBounds(bounds);
-  document.getElementById('map-section').style.display = 'block';
-}
- 
-function searchNearby() {
-  if (typeof kakao === 'undefined' || !kakaoMap) {
-    // 지도 재시도
-    initKakaoMap();
-    showToast('지도를 불러오는 중이에요. 잠시 후 다시 눌러주세요.');
-    return;
-  }
-  const btn = document.querySelector('.map-search-btn');
-  btn.textContent = '📍 위치 확인 중...';
-  btn.disabled = true;
- 
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      const center = new kakao.maps.LatLng(lat, lng);
-      kakaoMap.setCenter(center);
- 
-      // 현재 위치 마커
-      new kakao.maps.Marker({ map: kakaoMap, position: center,
-        title: '현재 위치', image: new kakao.maps.MarkerImage(
-          'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-          new kakao.maps.Size(24, 35)) });
- 
-      // 장소 검색
-      const ps = new kakao.maps.services.Places();
-      const keyword = currentMenuName || '음식점';
-      ps.keywordSearch(keyword, (data, status) => {
-        btn.textContent = '🔍 현재 위치에서 검색';
-        btn.disabled = false;
-        if (status !== kakao.maps.services.Status.OK) {
-          showToast('주변 음식점을 찾지 못했어요.');
-          return;
-        }
-        const list = document.getElementById('place-list');
-        list.innerHTML = '';
-        const bounds = new kakao.maps.LatLngBounds();
- 
-        data.slice(0, 5).forEach((place, i) => {
-          const pos = new kakao.maps.LatLng(place.y, place.x);
-          bounds.extend(pos);
-          // 마커
-          const marker = new kakao.maps.Marker({ map: kakaoMap, position: pos, title: place.place_name });
-          const iw = new kakao.maps.InfoWindow({ content: `<div style="padding:5px;font-size:12px;white-space:nowrap;">${place.place_name}</div>` });
-          kakao.maps.event.addListener(marker, 'click', () => iw.open(kakaoMap, marker));
- 
-          // 거리 계산
-          const dist = Math.round(getDistance(lat, lng, place.y, place.x));
-          const distText = dist >= 1000 ? (dist/1000).toFixed(1)+'km' : dist+'m';
- 
-          // 리스트 아이템
-          const item = document.createElement('div');
-          item.className = 'map-place-item';
-          item.innerHTML = `
-            <div>
-              <div class="map-place-name">${place.place_name}</div>
-              <div class="map-place-addr">${place.road_address_name || place.address_name}</div>
-            </div>
-            <div class="map-place-dist">${distText}</div>`;
-          item.onclick = () => {
-            kakaoMap.setCenter(pos);
-            kakaoMap.setLevel(3);
-            iw.open(kakaoMap, marker);
-          };
-          list.appendChild(item);
-        });
-        kakaoMap.setBounds(bounds);
-        showToast(`${keyword} 근처 식당 ${data.slice(0,5).length}곳 찾았어요!`);
-      }, { location: center, radius: 1000, sort: kakao.maps.services.SortBy.DISTANCE });
-    },
-    () => {
-      btn.textContent = '🔍 현재 위치에서 검색';
-      btn.disabled = false;
-      showToast('위치 권한을 허용해주세요.');
-    }
-  );
-}
  
  
  
