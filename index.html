@@ -7,7 +7,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="지금뭐먹지">
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services"></script>
+<script>window._kakaoSDKLoaded = false; window._kakaoSDKError = false;</script>
+<script type="text/javascript"
+  src="//dapi.kakao.com/v2/maps/sdk.js?appkey=093c4cbbbee7be4640a2e850e629fc87&libraries=services"
+  onload="window._kakaoSDKLoaded=true; console.log('카카오 SDK 로드 성공');"
+  onerror="window._kakaoSDKError=true; console.error('카카오 SDK 로드 실패 - 도메인 미등록');"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9933896132600937" crossorigin="anonymous"></script>
 <meta name="theme-color" content="#FF6B35">
 <title>지금 뭐먹지</title>
@@ -2129,7 +2133,7 @@ function initMainMap(callback) {
   function tryInit() {
     attempts++;
     // kakao, kakao.maps, kakao.maps.Map 모두 체크
-    if(typeof kakao !== 'undefined' && kakao.maps && kakao.maps.Map) {
+    if(window._kakaoSDKLoaded && typeof kakao !== 'undefined' && kakao.maps && kakao.maps.Map) {
       try {
         mapObject = new kakao.maps.Map(container, {
           center: new kakao.maps.LatLng(35.1796, 129.0756),
@@ -2147,8 +2151,16 @@ function initMainMap(callback) {
     }
     if(attempts > 20) {
       if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;">❌ 카카오 SDK 로딩 실패<br><br>'+
-        '<b>developers.kakao.com</b><br>플랫폼 키 → JS SDK 도메인에<br>'+
-        '<b>https://pktop86.github.io</b><br>등록 후 저장 버튼 클릭 필요</div>';
+        (window._kakaoSDKError
+          ? '<b>카카오 스크립트 로드 자체가 실패했어요</b><br><br>'+
+            'developers.kakao.com<br>→ 플랫폼 키 → JS SDK 도메인<br>'+
+            '<b>https://pktop86.github.io</b><br>등록 후 페이지 저장 클릭<br><br>'+
+            '<small>등록 후 강력새로고침(Ctrl+Shift+R)</small>'
+          : '<b>kakao 객체 없음</b><br><br>'+
+            '페이지를 강력새로고침(Ctrl+Shift+R)<br>후 다시 시도해주세요<br><br>'+
+            '또는 도메인 등록 확인:<br>developers.kakao.com<br>→ JS SDK 도메인<br>'+
+            '<b>https://pktop86.github.io</b>') +
+        '</div>';
       return;
     }
     setTimeout(tryInit, 300);
