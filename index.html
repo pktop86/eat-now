@@ -566,13 +566,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       </div>
       <div id="candidates-container"></div>
     </div>
-    <!-- 카카오맵 섹션 -->
-    <div class="map-section" id="map-section" style="display:none;">
-      <div class="map-title"><span>📍</span> 주변 음식점 찾기</div>
-      <div id="kakao-map"></div>
-      <button class="map-search-btn" onclick="searchNearby()">🔍 현재 위치에서 검색</button>
-      <div class="map-place-list" id="place-list"></div>
-    </div>
+ 
     <!-- 광고 섹션 -->
     <div class="ad-section">
       <div class="ad-label">광고</div>
@@ -594,6 +588,33 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     </div>
     <div style="height:20px;"></div>
   </div>
+</div>
+ 
+ 
+<!-- ═══════════════════════════════════════════════ -->
+<!--  화면: 주변 식당 지도                          -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="map-screen">
+  <div class="header safe-top" style="border-bottom:1px solid var(--border);">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div style="flex:1;">
+      <div style="font-size:16px;font-weight:900;" id="map-screen-title">주변 식당 찾기</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:1px;" id="map-screen-sub">탐색 중...</div>
+    </div>
+  </div>
+  <!-- 반경 설정 -->
+  <div style="padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+    <span style="font-size:13px;font-weight:700;white-space:nowrap;">📍 반경</span>
+    <input type="range" id="map-radius-slider" min="0" max="4" value="2" step="1"
+      oninput="onMapRadiusChange(this.value)"
+      style="flex:1;accent-color:var(--primary);cursor:pointer;">
+    <span id="map-radius-label" style="font-size:13px;font-weight:900;color:var(--primary);min-width:36px;text-align:right;">1km</span>
+    <button onclick="reSearchMap()" style="background:var(--primary);color:#fff;border:none;border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;">재탐색</button>
+  </div>
+  <!-- 지도 -->
+  <div id="main-kakao-map" style="width:100%;height:260px;background:#f0f0f0;flex-shrink:0;"></div>
+  <!-- 결과 목록 (스크롤) -->
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="map-place-list"></div>
 </div>
  
 <!-- ═══════════════════════════════════════════════ -->
@@ -692,7 +713,27 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <div class="toggle-btn active" data-val="solo" onclick="prefSelectSolo(this)">주로 혼밥 🧍</div>
         <div class="toggle-btn" data-val="group" onclick="prefSelectSolo(this)">같이 먹기 👥</div>
       </div>
-      <div class="field-label" style="margin-top:20px;">🥦 다이어트 모드</div>
+      <div class="field-label" style="margin-top:20px;">📍 탐색 반경 설정</div>
+      <div style="background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);padding:14px 16px;margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:14px;font-weight:700;">현재 위치에서 <span id="radius-label" style="color:var(--primary);">1km</span> 이내</span>
+          <span style="font-size:12px;color:var(--text2);">위치 기반 추천</span>
+        </div>
+        <input type="range" id="radius-slider" min="0" max="4" value="2" step="1"
+          oninput="updateRadiusLabel(this.value)"
+          style="width:100%;accent-color:var(--primary);cursor:pointer;">
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span style="font-size:10px;color:var(--text3);">300m</span>
+          <span style="font-size:10px;color:var(--text3);">500m</span>
+          <span style="font-size:10px;color:var(--text3);">1km</span>
+          <span style="font-size:10px;color:var(--text3);">2km</span>
+          <span style="font-size:10px;color:var(--text3);">5km</span>
+        </div>
+        <div style="margin-top:10px;background:var(--primary-bg);border-radius:8px;padding:10px 12px;font-size:12px;color:#C04A1C;line-height:1.5;">
+          추천된 메뉴 식당이 반경 내에 없으면<br>주변에 있는 메뉴 중 가장 잘 맞는 걸로 자동 변경해줘요 🔄
+        </div>
+      </div>
+      <div class="field-label">🥦 다이어트 모드</div>
       <div class="switch-row">
         <div class="switch-info">
           <span class="switch-icon">🥦</span>
@@ -756,29 +797,29 @@ const MENUS = [
 [2,'된장찌개','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [3,'순두부찌개','한식','국물류',1,2,1,2,3,5,1,5,1,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,1,3,5,3,5,2],
 [4,'청국장찌개','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,4,4,4,2,2,3,3,2,4,4,3,3,2,3,2,2],
-[5,'부대찌개','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[5,'부대찌개','한식','국물류',1,2,1,2,3,5,1,3,1,4,4,4,5,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [6,'동태찌개','한식','국물류',4,2,1,2,3,5,1,3,4,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [7,'알탕','한식','국물류',4,2,1,2,3,5,1,3,4,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [8,'매운탕','한식','국물류',4,2,1,2,3,5,1,3,4,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
-[9,'갈비탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,5,3,3,3,4,4,4,2,4,3,3,3,2,2,3,5,2,3,2,2],
-[10,'설렁탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
-[11,'곰탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[9,'갈비탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,5,3,3,3,4,4,5,2,4,3,3,3,2,2,3,5,2,3,2,2],
+[10,'설렁탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,5,4,5,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[11,'곰탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,5,4,5,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [12,'도가니탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,5,4,4,2,2,3,3,2,4,4,3,3,2,3,2,2],
-[13,'삼계탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,5,2,3,2,5],
+[13,'삼계탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,4,4,5,2,2,3,3,3,2,2,3,5,2,3,2,5],
 [14,'육개장','한식','국물류',4,2,1,2,3,5,1,3,4,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [15,'해장국','한식','국물류',1,2,1,2,3,5,1,3,1,3,5,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
-[16,'콩나물국밥','한식','국물류',1,2,1,2,3,5,1,3,1,3,5,5,3,3,5,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
-[17,'선지해장국','한식','국물류',1,2,1,2,3,5,1,3,1,3,5,4,3,3,3,3,5,4,4,2,2,3,3,2,4,4,3,3,2,3,2,2],
+[16,'콩나물국밥','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,5,3,3,5,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[17,'선지해장국','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,5,4,4,2,2,3,3,2,4,4,3,3,2,3,2,2],
 [18,'뼈해장국','한식','국물류',1,2,1,2,3,5,1,3,1,3,5,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [19,'순대국','한식','국물류',1,2,1,2,3,5,1,3,1,3,5,4,3,5,3,3,5,4,4,2,1,5,5,5,2,2,3,3,2,3,2,2],
 [20,'닭곰탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,5,2,3,2,2],
-[21,'북어국','한식','국물류',1,2,1,2,3,5,1,3,1,3,5,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[21,'북어국','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [22,'미역국','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
-[23,'감자탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[23,'감자탕','한식','국물류',1,2,1,2,3,5,1,3,1,4,4,4,3,3,3,3,4,5,5,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [24,'닭개장','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,5,2,3,2,2],
 [25,'소고기무국','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,5,2,3,2,2],
 [26,'우거지국','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
-[27,'황태국','한식','국물류',1,2,1,2,3,5,1,3,1,3,5,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[27,'황태국','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,5,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [28,'굴국','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [29,'들깨수제비','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [30,'버섯전골','한식','국물류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
@@ -809,9 +850,9 @@ const MENUS = [
 [55,'오징어볶음','한식','메인요리',4,2,1,2,3,1,1,3,4,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [56,'쭈꾸미볶음','한식','메인요리',4,2,1,2,3,1,1,3,4,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [57,'두루치기','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
-[58,'삼겹살','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,5,2,3,4,1,2,2,2,2,2,3,5,2,2,5,3,2,3,1,1],
-[59,'목살구이','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
-[60,'갈비구이','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,5,2,3,4,1,2,2,2,4,3,3,4,2,2,3,5,2,3,2,2],
+[58,'삼겹살','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,5,2,3,4,1,2,2,2,2,2,3,5,2,2,5,5,2,3,1,1],
+[59,'목살구이','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,5,2,3,2,2],
+[60,'갈비구이','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,5,2,3,5,1,2,2,2,4,3,3,4,2,2,3,5,2,3,2,2],
 [61,'소갈비구이','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,5,2,3,4,1,2,2,2,4,3,3,4,2,2,3,5,2,3,2,2],
 [62,'LA갈비','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,5,2,3,4,1,2,2,2,4,3,3,4,2,2,3,5,2,3,2,2],
 [63,'닭구이','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,5,2,3,2,2],
@@ -828,7 +869,7 @@ const MENUS = [
 [74,'간장새우','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [75,'새우장','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [76,'홍어삼합','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,2,4,4,3,3,2,3,2,2],
-[77,'족발','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,5,5,3,4,1,2,2,2,2,5,3,4,2,2,3,3,2,3,2,2],
+[77,'족발','한식','메인요리',1,2,1,2,3,1,1,5,1,3,3,3,5,5,3,4,1,2,2,2,2,5,3,4,2,2,3,3,2,3,2,2],
 [78,'보쌈','한식','메인요리',1,2,1,2,3,1,1,5,1,3,3,3,5,5,3,4,1,2,2,2,2,5,3,4,2,2,3,3,2,3,2,2],
 [79,'편육','한식','메인요리',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [80,'수육','한식','메인요리',1,2,1,2,3,1,1,5,1,3,3,3,3,2,3,4,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
@@ -896,7 +937,7 @@ const MENUS = [
 [142,'만둣국','한식/분식','분식',1,2,1,2,3,5,1,3,1,3,4,4,3,4,3,3,3,4,4,2,2,4,4,3,2,2,3,3,2,3,2,2],
 [143,'어묵탕','한식/분식','분식',1,2,1,2,3,5,1,3,1,4,5,4,3,4,3,3,4,4,4,2,2,4,4,3,2,2,3,3,2,3,2,2],
 [144,'오뎅','한식/분식','분식',1,2,1,2,3,1,1,3,1,3,3,4,3,4,3,3,1,2,2,2,1,4,5,3,2,2,3,3,2,3,2,2],
-[145,'칼국수','한식','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[145,'칼국수','한식','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,5,5,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [146,'바지락칼국수','한식','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [147,'장칼국수','한식','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [148,'해물칼국수','한식','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
@@ -905,15 +946,15 @@ const MENUS = [
 [151,'열무국수','한식','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [152,'냉면','한식','면류',1,2,1,2,3,4,1,3,1,3,3,5,3,2,3,3,1,4,1,5,2,3,3,5,2,2,3,3,2,3,2,2],
 [153,'물냉면','한식','면류',1,2,1,2,3,4,1,3,1,3,3,5,3,2,3,3,1,4,1,5,2,3,3,5,2,2,3,3,2,3,2,2],
-[154,'비빔냉면','한식','면류',1,2,1,2,3,4,1,3,1,3,3,5,3,2,3,3,1,4,1,5,2,3,3,5,4,4,3,3,2,3,2,2],
-[155,'막국수','한식','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[154,'비빔냉면','한식','면류',1,2,1,2,3,1,1,3,1,3,3,5,3,2,3,3,1,4,1,4,2,3,3,5,4,4,3,3,2,3,2,2],
+[155,'막국수','한식','면류',1,2,1,2,3,4,1,3,1,3,4,4,3,3,3,3,3,4,1,5,2,3,3,3,2,2,3,3,2,3,2,2],
 [156,'메밀국수','한식','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
-[157,'콩국수','한식','면류',1,2,1,2,3,4,1,3,1,3,4,4,3,3,3,3,3,4,1,5,2,3,3,3,2,2,3,3,2,3,2,2],
-[158,'수제비','한식','면류',1,2,1,2,3,4,1,3,1,3,3,3,3,2,3,3,1,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
-[159,'짜장면','중식','면류',3,2,1,2,3,1,1,3,3,4,3,5,4,2,3,3,1,2,2,2,2,4,3,5,2,2,3,3,2,3,2,2],
+[157,'콩국수','한식','면류',1,2,1,2,3,4,1,3,1,3,4,4,3,3,3,3,3,4,1,5,2,3,3,3,2,2,3,3,2,3,4,2],
+[158,'수제비','한식','면류',1,2,1,2,3,5,1,3,1,3,4,3,3,2,3,3,1,5,5,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[159,'짜장면','중식','면류',3,2,1,2,3,1,1,3,3,4,4,5,4,2,3,3,1,2,2,2,2,4,3,5,2,2,3,3,2,3,2,2],
 [160,'간짜장','중식','면류',3,2,1,2,3,1,1,3,3,4,3,5,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [161,'삼선짜장','중식','면류',3,2,1,2,3,1,1,3,3,4,3,5,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
-[162,'짬뽕','중식','면류',4,2,1,2,3,1,1,3,4,4,3,5,4,2,3,3,1,2,2,2,2,4,3,5,2,2,3,3,2,3,2,2],
+[162,'짬뽕','중식','면류',4,2,1,2,3,5,1,3,4,4,3,5,4,2,3,3,1,2,2,2,2,4,3,5,2,2,3,3,2,3,2,2],
 [163,'삼선짬뽕','중식','면류',4,2,1,2,3,1,1,3,4,4,3,5,4,2,3,3,1,2,2,2,2,4,3,5,2,2,3,3,2,3,2,2],
 [164,'짬짜면','한식','면류',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,3,1,2,2,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [165,'볶음짬뽕','중식','면류',4,2,1,2,3,1,1,3,4,4,3,5,4,2,3,3,1,2,2,2,2,4,3,5,2,2,3,3,2,3,2,2],
@@ -923,7 +964,7 @@ const MENUS = [
 [169,'미소라멘','일식','면류',1,2,1,2,3,4,1,3,1,3,3,4,3,2,4,3,1,4,4,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [170,'쇼유라멘','일식','면류',1,2,1,2,3,4,1,3,1,3,3,4,3,2,4,3,1,4,4,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [171,'탄탄멘','일식','면류',1,2,1,2,3,1,1,3,1,3,3,4,3,2,4,3,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
-[172,'마라탕면','한식','면류',4,2,1,2,3,5,1,3,4,4,5,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
+[172,'마라탕면','한식','면류',4,2,1,2,3,5,1,3,4,4,2,4,3,3,3,3,4,4,4,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [173,'쌀국수','아시안','면류',1,2,1,2,3,5,1,3,1,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,3,2,3,3,2,3,2,2],
 [174,'볶음쌀국수','아시안','면류',3,2,1,2,3,1,1,3,3,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,3,2,3,3,2,3,2,2],
 [175,'팟타이','아시안','면류',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,3,1,2,2,2,2,3,3,3,3,2,3,3,2,3,2,2],
@@ -935,7 +976,7 @@ const MENUS = [
 [181,'탄탄면','한식','면류',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,3,1,2,2,2,2,3,3,3,2,2,3,3,2,3,2,2],
 [182,'마라면','한식/분식','면류',4,2,1,2,3,4,1,3,4,3,3,5,3,5,3,3,1,4,4,2,1,5,5,3,2,2,5,3,2,3,1,2],
 [183,'카레우동','일식','면류',1,2,4,2,3,4,1,3,1,3,3,5,3,2,4,3,1,4,4,2,2,3,3,4,2,2,3,3,2,3,2,2],
-[184,'탕수육','중식','중식',1,2,1,2,3,5,1,2,1,4,3,4,4,3,3,3,4,4,4,2,2,4,3,4,2,2,3,3,2,3,2,2],
+[184,'탕수육','중식','중식',1,2,1,2,3,5,5,2,1,4,3,4,4,3,3,3,4,4,4,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [185,'깐풍기','중식','중식',1,2,1,2,3,1,5,2,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [186,'깐풍새우','중식','중식',1,2,1,2,3,1,5,2,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [187,'라조육','중식','중식',1,2,1,2,3,1,1,3,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
@@ -951,7 +992,7 @@ const MENUS = [
 [197,'고추잡채','중식','중식',1,2,1,2,3,1,1,3,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [198,'고추잡채밥','중식','중식',1,2,1,2,3,1,1,3,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [199,'난자완스','중식','중식',1,2,1,2,3,1,1,3,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
-[200,'사천탕수육','중식','중식',1,2,1,2,3,5,1,2,1,4,3,4,4,3,3,3,4,4,4,2,2,4,3,4,2,2,3,3,2,3,2,2],
+[200,'사천탕수육','중식','중식',1,2,1,2,3,5,5,2,1,4,3,4,4,3,3,3,4,4,4,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [201,'짜장밥','중식','중식',3,2,1,2,3,1,1,3,3,4,3,5,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [202,'짬뽕밥','중식','중식',4,2,1,2,3,1,1,3,4,4,3,5,4,2,3,3,1,2,2,2,2,4,3,5,2,2,3,3,2,3,2,2],
 [203,'해물볶음밥','중식','중식',3,2,1,2,3,1,1,3,3,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
@@ -992,10 +1033,10 @@ const MENUS = [
 [238,'스키야키','일식','일식',1,2,1,2,3,1,1,3,1,3,3,4,3,2,4,3,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [239,'샤브샤브','일식','일식',1,2,1,2,3,1,1,5,1,3,3,4,5,2,4,3,1,2,2,2,4,2,3,4,2,2,3,3,2,3,2,2],
 [240,'일본카레','일식','일식',1,2,4,2,3,1,1,3,1,3,3,4,3,2,4,3,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
-[241,'튀김우동','일식','일식',1,2,1,2,3,2,5,2,1,3,3,5,3,2,4,3,1,4,4,2,2,3,3,4,2,2,3,3,2,3,2,2],
+[241,'튀김우동','일식','일식',1,2,1,2,3,4,5,2,1,3,3,5,3,2,4,3,1,4,4,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [242,'새우튀김덮밥','일식','일식',1,2,1,2,3,1,5,2,1,3,3,5,3,2,5,3,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
 [243,'돈부리','일식','일식',1,2,1,2,3,1,1,3,1,3,3,4,3,2,4,3,1,2,2,2,2,3,3,4,2,2,3,3,2,3,2,2],
-[244,'스테이크','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,5,3,3,3,2,2,3,5,2,3,2,5],
+[244,'스테이크','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,5,1,2,2,2,4,3,3,3,2,2,3,5,2,3,2,5],
 [245,'등심스테이크','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,5,3,3,3,2,2,3,5,2,3,2,5],
 [246,'안심스테이크','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,5,3,3,3,2,2,3,5,2,3,2,5],
 [247,'함박스테이크','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,5,3,3,3,2,2,3,5,2,3,2,5],
@@ -1015,7 +1056,7 @@ const MENUS = [
 [261,'오믈렛','양식','양식',1,2,4,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
 [262,'그라탕','양식','양식',1,2,1,2,3,5,1,4,1,4,5,4,4,3,3,4,4,4,4,2,3,3,3,3,2,2,3,3,2,3,2,2],
 [263,'라자냐','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
-[264,'피자','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,5,5,3,4,1,2,2,2,3,5,3,3,2,2,5,3,2,3,1,1],
+[264,'피자','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,5,4,3,4,1,2,2,2,3,5,3,3,2,2,5,3,2,3,1,1],
 [265,'치즈피자','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,5,5,3,4,1,2,2,2,3,5,3,3,2,2,5,3,2,3,1,1],
 [266,'페퍼로니피자','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,5,5,3,4,1,2,2,2,3,5,3,3,2,2,5,3,2,3,1,1],
 [267,'불고기피자','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,5,5,3,4,1,2,2,2,3,5,3,5,2,2,5,5,2,3,1,1],
@@ -1030,11 +1071,11 @@ const MENUS = [
 [276,'파니니','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
 [277,'브런치플레이트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
 [278,'팬케이크','양식','양식',1,2,4,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
-[279,'프렌치토스트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
+[279,'프렌치토스트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,4,3,2,2,3,3,2,3,2,2],
 [280,'에그베네딕트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
-[281,'토스트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
-[282,'치즈토스트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
-[283,'햄토스트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
+[281,'토스트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,5,3,2,2,3,3,2,3,2,2],
+[282,'치즈토스트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,5,3,2,2,3,3,2,3,2,2],
+[283,'햄토스트','양식','양식',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,5,3,2,2,3,3,2,3,2,2],
 [284,'햄버거','패스트푸드','패스트푸드',1,2,1,4,3,1,1,3,1,4,3,3,3,5,3,3,1,2,2,2,2,5,5,4,3,2,5,3,2,3,1,1],
 [285,'치즈버거','패스트푸드','패스트푸드',1,2,1,4,3,1,1,3,1,4,3,3,3,4,3,3,1,2,2,2,2,5,5,4,3,2,4,3,2,3,2,2],
 [286,'더블버거','패스트푸드','패스트푸드',1,2,1,4,3,1,1,3,1,4,3,3,3,4,3,3,1,2,2,2,2,5,5,4,3,2,4,3,2,3,2,2],
@@ -1045,8 +1086,8 @@ const MENUS = [
 [291,'치킨너겟','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
 [292,'감자튀김','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,3,4,3,3,1,2,2,2,2,5,5,4,3,2,4,3,2,3,2,2],
 [293,'후라이드치킨','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
-[294,'양념치킨','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
-[295,'간장치킨','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
+[294,'양념치킨','패스트푸드','패스트푸드',1,2,4,4,3,1,4,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
+[295,'간장치킨','패스트푸드','패스트푸드',1,2,1,4,3,1,4,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
 [296,'마늘치킨','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
 [297,'파닭','패스트푸드','패스트푸드',1,2,1,4,3,1,1,3,1,4,3,3,3,4,3,3,1,2,2,2,2,5,5,4,3,2,4,5,2,3,2,2],
 [298,'숯불치킨','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
@@ -1056,7 +1097,7 @@ const MENUS = [
 [302,'치킨텐더','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
 [303,'치킨윙','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
 [304,'치킨봉','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
-[305,'버팔로윙','패스트푸드','패스트푸드',1,2,1,4,3,1,1,3,1,4,3,3,3,4,3,3,1,2,2,2,2,5,5,4,3,2,4,3,2,3,2,2],
+[305,'버팔로윙','패스트푸드','패스트푸드',1,2,1,4,3,1,5,3,1,4,3,3,3,4,3,3,1,2,2,2,2,5,5,4,3,2,4,3,2,3,2,2],
 [306,'닭강정컵','패스트푸드','패스트푸드',1,2,1,4,3,1,1,3,1,4,3,3,3,4,3,3,1,2,2,2,2,5,5,4,3,2,4,5,2,3,2,2],
 [307,'치킨샐러드','패스트푸드','패스트푸드',1,2,1,4,5,1,5,2,1,4,3,5,5,5,3,3,1,2,2,3,2,5,5,5,3,2,1,2,5,3,5,1],
 [308,'치킨랩','패스트푸드','패스트푸드',1,2,1,4,3,1,5,2,1,4,3,3,5,5,3,3,1,2,2,2,2,5,5,5,3,2,4,3,2,3,2,1],
@@ -1088,9 +1129,9 @@ const MENUS = [
 [334,'마살라','아시안','아시안',1,2,1,2,3,1,1,3,1,3,3,3,3,2,3,3,1,2,2,2,2,3,3,3,3,2,3,3,2,3,2,2],
 [335,'연어샐러드','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,2,5,3,5,2],
 [336,'리코타샐러드','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,2,5,3,5,2],
-[337,'시저샐러드','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,2,5,3,5,2],
+[337,'시저샐러드','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,2,2,5,3,4,2],
 [338,'그린샐러드','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,2,5,3,5,2],
-[339,'아보카도샐러드','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,2,5,3,5,2],
+[339,'아보카도샐러드','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,2,2,5,3,4,2],
 [340,'포케','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,3,5,3,5,2],
 [341,'연어포케','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,3,5,3,5,5],
 [342,'참치포케','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,3,5,3,5,5],
@@ -1115,11 +1156,11 @@ const MENUS = [
 [361,'채식샐러드','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,2,5,3,5,2],
 [362,'베지랩','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,3,5,3,5,2],
 [363,'베지버거','건강식','건강식',1,2,1,2,5,1,1,3,1,2,3,5,3,2,3,3,1,2,2,3,2,3,3,3,2,2,1,3,5,3,5,2],
-[364,'전복죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,3,2,3,4,2],
+[364,'전복죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,4,3,4,3,1,2,2,3,2,3,4,2],
 [365,'소고기죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,5,2,3,4,2],
-[366,'닭죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,5,2,3,4,2],
-[367,'야채죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,2,5,3,4,2],
-[368,'단호박죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,3,2,3,4,2],
+[366,'닭죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,4,2,3,4,2],
+[367,'야채죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,1,2,5,3,5,2],
+[368,'단호박죽','한식','죽류',1,2,3,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,3,2,3,4,2],
 [369,'팥죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,3,2,3,4,2],
 [370,'참치죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,3,2,3,4,5],
 [371,'버섯죽','한식','죽류',1,2,1,2,4,5,1,5,1,3,5,5,3,2,3,3,5,2,2,2,2,3,4,3,1,2,2,3,2,3,4,2],
@@ -1157,7 +1198,7 @@ const MENUS = [
 [403,'훈제연어','양식','훈제요리',1,2,1,2,3,1,1,4,1,3,3,3,4,2,3,4,1,2,2,2,3,3,3,3,2,2,3,3,2,3,2,2],
 [404,'훈제치킨','양식','훈제요리',1,2,1,2,3,1,5,2,1,3,3,3,5,5,3,4,1,2,2,2,3,5,3,5,2,2,3,3,2,3,2,1],
 [405,'핫팟','중식','마라/훠궈',1,2,1,2,3,1,1,3,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
-[406,'볶음마라탕','중식','마라/훠궈',4,2,1,2,3,1,1,2,4,4,2,4,4,3,3,3,4,4,4,2,2,4,3,4,2,2,3,3,2,3,2,2],
+[406,'볶음마라탕','중식','마라/훠궈',4,2,1,4,3,1,2,2,4,4,2,4,4,3,3,3,4,4,4,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [407,'마라국수','중식','마라/훠궈',4,2,1,2,3,5,1,3,4,4,4,4,4,3,3,3,3,4,4,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [408,'사천요리','중식','마라/훠궈',1,2,1,2,3,1,1,3,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
 [409,'쓰촨요리','중식','마라/훠궈',1,2,1,2,3,1,1,3,1,4,3,3,4,2,3,3,1,2,2,2,2,4,3,4,2,2,3,3,2,3,2,2],
@@ -1166,7 +1207,7 @@ const MENUS = [
 [412,'매운쌀국수','아시안','면류',4,2,1,2,3,5,1,3,4,3,4,4,3,3,3,3,3,4,4,2,2,3,3,3,3,2,3,3,2,3,2,2],
 [413,'도시락정식','한식','정식',1,2,1,2,3,1,1,3,1,3,3,5,3,2,5,3,1,2,2,2,4,3,3,3,2,2,3,3,2,3,2,2],
 [414,'백반정식','한식','정식',1,2,1,2,3,1,1,3,1,3,3,5,3,2,5,3,1,2,2,2,4,3,3,3,2,2,3,3,2,3,2,2],
-[415,'한정식','한식','정식',1,2,1,2,3,1,1,3,1,3,3,5,3,2,5,3,1,2,2,2,4,3,3,3,2,2,3,3,2,3,2,2],
+[415,'한정식','한식','정식',1,2,1,2,3,1,1,3,1,3,3,5,5,2,5,5,1,2,2,2,5,3,3,3,2,2,3,3,2,3,2,2],
 [416,'생선정식','한식','정식',1,2,1,2,3,1,1,3,1,3,3,5,3,2,5,3,1,2,2,2,4,3,3,3,2,2,3,3,2,3,2,2],
 [417,'불고기정식','한식','정식',1,2,1,2,3,1,1,3,1,3,3,5,3,2,5,3,1,2,2,2,4,3,3,5,2,2,3,5,2,3,2,2],
 [418,'제육정식','한식','정식',3,2,1,2,3,1,1,3,3,3,3,5,3,2,5,3,1,2,2,2,4,3,3,3,2,2,3,3,2,3,2,2],
@@ -1891,19 +1932,24 @@ function advanceQuestion() {
  
 function doRecommend() {
   showLoading();
-  setTimeout(()=>{
-    const result = runRecommend(qAnswers);
+  setTimeout(async ()=>{
+    let result = runRecommend(qAnswers);
+    if(!result) { hideLoading(); showToast('추천할 메뉴를 찾지 못했어요. 다시 시도해주세요.'); goBack(); return; }
+ 
+    // 위치 기반 필터 적용 (카카오맵 + 반경 설정 있을 때만)
+    if(typeof kakao !== 'undefined' && kakao.maps && state.prefs.radiusIdx !== undefined) {
+      try { result = await applyLocationFilter(result, qAnswers); } catch(e) {}
+    }
+ 
     hideLoading();
-    if(!result) { showToast('추천할 메뉴를 찾지 못했어요. 다시 시도해주세요.'); goBack(); return; }
     state.currentResult = result;
     state.currentAnswers = {...qAnswers};
-    // 히스토리 저장
     state.history.unshift({ name:result.main.name, emoji:result.main.emoji, date:new Date().toLocaleDateString('ko-KR',{month:'short',day:'numeric'}) });
     state.history = state.history.slice(0,20);
     saveState();
     renderResultScreen(result);
     showScreen('result-screen');
-  }, 1200);
+  }, 800);
 }
  
 function retryRecommend() {
@@ -1916,11 +1962,439 @@ function retryRecommend() {
   showScreen('home-screen', false);
   switchTab('home');
 }
+ 
+ 
 // ════════════════════════════════════════════════════════════════
 // 카카오맵
 // ════════════════════════════════════════════════════════════════
 let kakaoMap = null;
 let currentMenuName = '';
+ 
+function getDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+ 
+ 
+// ════════════════════════════════════════════════════════════════
+// 추천 결과 화면
+// ════════════════════════════════════════════════════════════════
+function renderResultScreen(result) {
+  const m = result.main;
+  currentMenuName = m.name;
+ 
+  // 위치 기반 변경 알림 배지
+  const locBadge = document.getElementById('loc-change-badge');
+  if(locBadge) {
+    if(result.locationChanged) {
+      locBadge.style.display = 'block';
+      locBadge.innerHTML = `📍 <b>${result.radiusLabel}</b> 내 "<b>${result.originalMenu}</b>" 식당이 없어서 변경됐어요`;
+    } else if(result.locationVerified) {
+      locBadge.style.display = 'block';
+      locBadge.innerHTML = `✅ <b>${result.radiusLabel}</b> 내에 식당이 있어요!`;
+      locBadge.style.background = '#F0FFF4';
+      locBadge.style.color = '#28A745';
+    } else {
+      locBadge.style.display = 'none';
+    }
+  }
+  // nearbyPlaces가 있으면 지도에 전달
+  if(result.nearbyPlaces) {
+    window._nearbyPlaces = result.nearbyPlaces;
+  }
+  document.getElementById('r-emoji').textContent = m.emoji;
+  document.getElementById('r-name').textContent = m.name;
+  document.getElementById('r-category').textContent = m.cat+(m.sub?` · ${m.sub}`:'');
+  document.getElementById('r-reason').textContent = m.reason;
+  document.getElementById('r-price').textContent = m.price;
+  document.getElementById('r-score').textContent = Math.round(m.score)+'점';
+  document.getElementById('r-tags').innerHTML = m.tags.map(t=>`<span class="tag-chip">#${t}</span>`).join('');
+ 
+  // 후보
+  const cc = document.getElementById('candidates-container');
+  cc.innerHTML = result.candidates.map((c,i)=>`
+    <div class="cand-card" onclick="swapMain(${i})">
+      <span class="cand-rank">#${i+2}</span>
+      <span class="cand-emoji">${c.emoji}</span>
+      <div class="cand-info">
+        <div class="cand-name">${c.name}</div>
+        <div class="cand-cat">${c.cat}</div>
+        <div class="cand-reason">${c.reason}</div>
+      </div>
+      <div class="cand-score"><div class="cand-score-num">${Math.round(c.score)}</div><div class="cand-score-unit">점</div></div>
+      <span>›</span>
+    </div>
+  `).join('');
+ 
+  // 지도 초기화
+  setTimeout(()=>{ if(typeof kakao!=='undefined') initKakaoMap(); }, 500);
+  // 지도 초기화
+  currentMenuName = m.name;
+  document.getElementById('map-section').style.display = 'none';
+  setTimeout(initKakaoMap, 800);
+  // 피드백 초기화
+  document.getElementById('fb-title').textContent = '먹어보셨나요?';
+  [1,2,3].forEach(r=>{
+    const b = document.getElementById('fb-'+r);
+    b.className='fb-btn';
+  });
+}
+ 
+function swapMain(idx) {
+  const r = state.currentResult;
+  const old = r.main;
+  const newMain = r.candidates[idx];
+  r.candidates[idx] = old;
+  r.main = newMain;
+  renderResultScreen(r);
+  showToast('메인 메뉴가 변경됐어요!');
+}
+ 
+function decideMenu() {
+  const main = state.currentResult?.main;
+  if(!main) return;
+  // 식사 기록 저장
+  const mealType = autoMealType();
+  const mealTypeLabel = {breakfast:'아침',lunch:'점심',dinner:'저녁',late_night:'야식'}[mealType];
+  const newMeal = { id:Date.now(), name:main.name, cat:main.cat,
+    date:todayStr(), type:mealType, sat:null, emoji:main.emoji||'🍽️' };
+  state.meals.unshift(newMeal);
+  saveState();
+  showToast(`"${main.name}" 결정! 주변 식당 찾는 중... 🗺️`);
+  // 지도 화면으로 이동
+  openMapScreen(main.name);
+}
+ 
+// ── 지도 화면 ─────────────────────────────────────
+let mapObject = null;
+let mapMenuName = '';
+let mapRadiusIdx = 2;
+const RADIUS_VALS = [300,500,1000,2000,5000];
+const RADIUS_LABS = ['300m','500m','1km','2km','5km'];
+ 
+function openMapScreen(menuName) {
+  mapMenuName = menuName;
+  mapRadiusIdx = state.prefs.radiusIdx !== undefined ? state.prefs.radiusIdx : 2;
+ 
+  document.getElementById('map-screen-title').textContent = '"'+menuName+'" 주변 식당';
+  document.getElementById('map-screen-sub').textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
+  document.getElementById('map-radius-slider').value = mapRadiusIdx;
+  document.getElementById('map-radius-label').textContent = RADIUS_LABS[mapRadiusIdx];
+  document.getElementById('map-place-list').innerHTML =
+    '<div style="display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:12px;text-align:center;">' +
+    '<div style="width:36px;height:36px;border:3px solid #eee;border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;"></div>' +
+    '<div style="font-size:14px;font-weight:700;color:var(--text2);">위치 확인 중...</div></div>';
+ 
+  showScreen('map-screen');
+ 
+  // 카카오맵 초기화 후 탐색
+  setTimeout(function(){
+    initMainMap(function(){ doSearchPlaces(menuName, mapRadiusIdx); });
+  }, 400);
+}
+ 
+function initMainMap(callback) {
+  const container = document.getElementById('main-kakao-map');
+  if(!container) return;
+ 
+  if(mapObject) {
+    try { kakao.maps.event.trigger(mapObject,'resize'); } catch(e){}
+    if(callback) callback();
+    return;
+  }
+ 
+  function tryCreate() {
+    if(typeof kakao === 'undefined' || !kakao.maps) return false;
+    try {
+      mapObject = new kakao.maps.Map(container, {
+        center: new kakao.maps.LatLng(37.5665,126.9780), level:4
+      });
+      setTimeout(function(){ kakao.maps.event.trigger(mapObject,'resize'); },200);
+      if(callback) callback();
+      return true;
+    } catch(e) { return false; }
+  }
+ 
+  if(!tryCreate()) {
+    let t=0;
+    const iv = setInterval(function(){
+      t++;
+      if(tryCreate() || t>20) clearInterval(iv);
+    },400);
+  }
+}
+ 
+function onMapRadiusChange(val) {
+  mapRadiusIdx = parseInt(val);
+  document.getElementById('map-radius-label').textContent = RADIUS_LABS[mapRadiusIdx];
+}
+ 
+function reSearchMap() {
+  state.prefs.radiusIdx = mapRadiusIdx;
+  saveState();
+  document.getElementById('map-screen-sub').textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
+  document.getElementById('map-place-list').innerHTML =
+    '<div style="display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:12px;">' +
+    '<div style="width:32px;height:32px;border:3px solid #eee;border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;"></div>' +
+    '<div style="font-size:13px;color:var(--text2);">재탐색 중...</div></div>';
+  // 기존 마커 초기화
+  if(mapObject) {
+    mapObject.setLevel(4);
+  }
+  doSearchPlaces(mapMenuName, mapRadiusIdx);
+}
+ 
+function doSearchPlaces(menuName, radiusIdx) {
+  if(!navigator.geolocation) {
+    setMapMsg('😢','위치 서비스를 사용할 수 없어요.','브라우저 설정에서 위치 권한을 허용해주세요.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const radius = RADIUS_VALS[radiusIdx];
+ 
+      if(typeof kakao==='undefined'||!kakao.maps||!kakao.maps.services) {
+        setMapMsg('🗺️','카카오맵을 불러올 수 없어요.',
+          'developers.kakao.com에서 도메인 등록을 확인해주세요.<br><b>https://pktop86.github.io</b>');
+        return;
+      }
+ 
+      const myLatLng = new kakao.maps.LatLng(lat,lng);
+      mapObject.setCenter(myLatLng);
+ 
+      // 내 위치 마커 (별 모양)
+      new kakao.maps.Marker({
+        map:mapObject, position:myLatLng, title:'내 위치',
+        image: new kakao.maps.MarkerImage(
+          'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+          new kakao.maps.Size(24,35))
+      });
+ 
+      // 반경 원
+      new kakao.maps.Circle({
+        map:mapObject, center:myLatLng, radius:radius,
+        strokeWeight:2, strokeColor:'#FF6B35', strokeOpacity:0.7,
+        fillColor:'#FF6B35', fillOpacity:0.06
+      });
+ 
+      const ps = new kakao.maps.services.Places();
+      ps.keywordSearch(menuName, function(data,status) {
+        if(status!==kakao.maps.services.Status.OK || !data || !data.length) {
+          setMapMsg('😢',
+            RADIUS_LABS[radiusIdx]+' 내에 "'+menuName+'" 식당이 없어요',
+            '반경을 넓혀서 재탐색해보세요');
+          return;
+        }
+        renderPlaces(data, lat, lng);
+      }, { location:myLatLng, radius:radius, sort:kakao.maps.services.SortBy.DISTANCE });
+    },
+    function(err) {
+      setMapMsg('📍','위치 권한이 필요해요','주소창 왼쪽 자물쇠 아이콘 → 위치 → 허용');
+    },
+    { timeout:8000, maximumAge:30000 }
+  );
+}
+ 
+function renderPlaces(places, myLat, myLng) {
+  const list = document.getElementById('map-place-list');
+  const bounds = new kakao.maps.LatLngBounds();
+ 
+  document.getElementById('map-screen-sub').textContent =
+    RADIUS_LABS[mapRadiusIdx]+' 이내 '+places.length+'곳 발견';
+ 
+  let html = '<div style="padding:10px 16px;background:var(--primary-bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">' +
+    '<span style="font-size:13px;font-weight:700;color:var(--primary);">📍 '+places.length+'곳 발견</span>' +
+    '<span style="font-size:11px;color:var(--text2);">가까운 순</span></div>';
+ 
+  places.forEach(function(place, i) {
+    const pos = new kakao.maps.LatLng(place.y, place.x);
+    bounds.extend(pos);
+ 
+    // 번호 마커
+    const marker = new kakao.maps.Marker({map:mapObject, position:pos, title:place.place_name});
+    const iw = new kakao.maps.InfoWindow({
+      content:'<div style="padding:6px 10px;font-size:12px;font-weight:700;white-space:nowrap;">'+(i+1)+'. '+place.place_name+'</div>'
+    });
+    kakao.maps.event.addListener(marker,'click',function(){ iw.open(mapObject,marker); });
+    if(i===0) iw.open(mapObject,marker);
+ 
+    const distM = place.distance ? parseInt(place.distance) : calcDist(myLat,myLng,place.y,place.x);
+    const distTxt = distM>=1000 ? (distM/1000).toFixed(1)+'km' : distM+'m';
+    const bg = i%2===0?'var(--surface)':'var(--bg)';
+ 
+    html += '<div onclick="focusPlace('+place.y+','+place.x+')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+bg+';border-bottom:1px solid var(--border);cursor:pointer;">' +
+      '<div style="width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0;">'+(i+1)+'</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+place.place_name+'</div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(place.road_address_name||place.address_name||'')+'</div>' +
+        (place.phone?'<div style="font-size:11px;color:var(--text3);margin-top:1px;">📞 '+place.phone+'</div>':'') +
+      '</div>' +
+      '<div style="text-align:right;flex-shrink:0;">' +
+        '<div style="font-size:16px;font-weight:900;color:var(--primary);">'+distTxt+'</div>' +
+        '<a href="'+place.place_url+'" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--text3);">지도앱→</a>' +
+      '</div></div>';
+  });
+ 
+  list.innerHTML = html;
+  mapObject.setBounds(bounds);
+}
+ 
+function focusPlace(lat, lng) {
+  if(!mapObject) return;
+  mapObject.setCenter(new kakao.maps.LatLng(lat, lng));
+  mapObject.setLevel(3);
+}
+ 
+function setMapMsg(emoji, title, desc) {
+  document.getElementById('map-screen-sub').textContent = title;
+  document.getElementById('map-place-list').innerHTML =
+    '<div style="display:flex;flex-direction:column;align-items:center;padding:50px 20px;gap:10px;text-align:center;">' +
+    '<div style="font-size:48px;">'+emoji+'</div>' +
+    '<div style="font-size:15px;font-weight:700;">'+title+'</div>' +
+    '<div style="font-size:13px;color:var(--text2);line-height:1.6;">'+desc+'</div></div>';
+}
+ 
+function calcDist(lat1,lng1,lat2,lng2) {
+  const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+}
+ 
+ 
+function retryRecommend() {
+  // 현재 결과 초기화
+  state.currentResult = null;
+  qStep = 0;
+  qAnswers = {};
+  // 스택 정리 후 홈으로
+  screenStack.length = 0;
+  showScreen('home-screen', false);
+  switchTab('home');
+}
+ 
+// ════════════════════════════════════════════════════════════════
+// 위치 기반 추천 (반경 탐색)
+// ════════════════════════════════════════════════════════════════
+const RADIUS_VALUES = [300, 500, 1000, 2000, 5000];
+const RADIUS_LABELS = ['300m','500m','1km','2km','5km'];
+ 
+function updateRadiusLabel(val) {
+  const el = document.getElementById('radius-label');
+  if(el) el.textContent = RADIUS_LABELS[parseInt(val)];
+}
+ 
+// 현재 위치 캐시
+let cachedPosition = null;
+ 
+function getCurrentPosition() {
+  return new Promise((resolve, reject) => {
+    if(cachedPosition) { resolve(cachedPosition); return; }
+    if(!navigator.geolocation) { reject('geolocation_unsupported'); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => { cachedPosition = pos; resolve(pos); },
+      err => reject(err),
+      { timeout: 5000, maximumAge: 60000 }
+    );
+  });
+}
+ 
+// 카카오 장소 검색 (Promise wrap)
+function searchKakaoPlaces(keyword, lat, lng, radius) {
+  return new Promise((resolve) => {
+    if(typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.services) {
+      resolve([]); return;
+    }
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(keyword, (data, status) => {
+      if(status === kakao.maps.services.Status.OK) resolve(data);
+      else resolve([]);
+    }, {
+      location: new kakao.maps.LatLng(lat, lng),
+      radius: radius,
+      sort: kakao.maps.services.SortBy.DISTANCE
+    });
+  });
+}
+ 
+// 핵심: 추천 결과에 위치 기반 필터 적용
+async function applyLocationFilter(result, answers) {
+  const radiusIdx = state.prefs.radiusIdx !== undefined ? state.prefs.radiusIdx : 2;
+  const radius = RADIUS_VALUES[radiusIdx];
+  const radiusLabel = RADIUS_LABELS[radiusIdx];
+ 
+  // 위치 권한 없으면 그냥 반환
+  let pos;
+  try { pos = await getCurrentPosition(); }
+  catch(e) { return result; }  // 위치 없으면 위치 필터 스킵
+ 
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+ 
+  // 1단계: 추천된 메인 메뉴가 반경 내에 있는지 확인
+  showToast('📍 주변 식당 탐색 중...');
+  const mainPlaces = await searchKakaoPlaces(result.main.name, lat, lng, radius);
+ 
+  if(mainPlaces.length > 0) {
+    // 있으면 그대로 반환 + 지도에 장소 정보 전달
+    result.nearbyPlaces = mainPlaces.slice(0,5);
+    result.locationVerified = true;
+    result.radiusLabel = radiusLabel;
+    showToast(`✅ ${radiusLabel} 내 "${result.main.name}" ${mainPlaces.length}곳 발견!`);
+    return result;
+  }
+ 
+  // 2단계: 메인 메뉴 근처에 없음 → 후보들도 확인
+  showToast(`🔍 "${result.main.name}"이 ${radiusLabel} 내에 없어요. 대안 탐색 중...`);
+ 
+  // 후보 + 더 많은 옵션 생성
+  const scored = MENUS.map(m => {
+    const s = scoreMenu(m, {hour:new Date().getHours(),weather:'sunny',hangover:false}, answers);
+    return {m, s};
+  }).filter(x => x.s > 0).sort((a,b) => b.s - a.s).slice(0, 20);
+ 
+  for(const {m, s} of scored) {
+    if(m[0] === result.main.id) continue; // 이미 확인한 메인 스킵
+ 
+    const places = await searchKakaoPlaces(m[1], lat, lng, radius);
+    if(places.length > 0) {
+      const makeItem = (menu, score) => ({
+        id: menu[0], name: menu[1], cat: menu[2], sub: menu[3],
+        score: score,
+        reason: generateReason(menu, {hour:new Date().getHours(),weather:'sunny',hangover:false}, answers),
+        price: PRICE_LABEL[menu[24]] || '',
+        tags: generateTags(menu, {}, answers),
+        emoji: CAT_EMOJI[menu[2]] || '🍽️',
+      });
+ 
+      const newResult = {
+        main: makeItem(m, s),
+        candidates: result.candidates,
+        nearbyPlaces: places.slice(0,5),
+        locationVerified: true,
+        locationChanged: true,
+        originalMenu: result.main.name,
+        radiusLabel: radiusLabel,
+      };
+      showToast(`📍 ${radiusLabel} 내 "${m[1]}" ${places.length}곳 발견!`);
+      return newResult;
+    }
+  }
+ 
+  // 3단계: 반경 내 아무것도 없음 → 원래 결과 반환하되 알림
+  result.locationVerified = false;
+  result.radiusLabel = radiusLabel;
+  showToast(`📍 ${radiusLabel} 내 식당을 찾지 못했어요. 원래 추천 유지`);
+  return result;
+}
+ 
+// ════════════════════════════════════════════════════════════════
+// 카카오맵
+// ════════════════════════════════════════════════════════════════
  
 function initKakaoMap() {
   const mapSec = document.getElementById('map-section');
@@ -1950,9 +2424,47 @@ function _createMap() {
     const center = new kakao.maps.LatLng(37.5665, 126.9780);
     kakaoMap = new kakao.maps.Map(container, { center, level:4 });
     mapSec.style.display = 'block';
-    // 지도 크기 재조정 (display:none 후 표시 시 필요)
-    setTimeout(()=>{ kakao.maps.event.trigger(kakaoMap,'resize'); }, 100);
+    setTimeout(()=>{
+      kakao.maps.event.trigger(kakaoMap,'resize');
+      // 위치 기반 추천으로 이미 nearbyPlaces 있으면 바로 표시
+      if(window._nearbyPlaces && window._nearbyPlaces.length > 0) {
+        showNearbyOnMap(window._nearbyPlaces);
+      }
+    }, 200);
   } catch(e) { console.log('지도 생성 실패:', e); }
+}
+ 
+// nearbyPlaces를 지도에 바로 표시
+function showNearbyOnMap(places) {
+  if(!kakaoMap || !places || !places.length) return;
+  const list = document.getElementById('place-list');
+  const bounds = new kakao.maps.LatLngBounds();
+  if(list) list.innerHTML = '';
+ 
+  places.forEach((place, i) => {
+    const pos = new kakao.maps.LatLng(place.y, place.x);
+    bounds.extend(pos);
+    const marker = new kakao.maps.Marker({ map:kakaoMap, position:pos, title:place.place_name });
+    const iw = new kakao.maps.InfoWindow({
+      content: `<div style="padding:5px 8px;font-size:12px;white-space:nowrap;font-weight:700;">${place.place_name}</div>`
+    });
+    kakao.maps.event.addListener(marker,'click',()=>iw.open(kakaoMap,marker));
+    if(i===0) iw.open(kakaoMap,marker);
+ 
+    if(list) {
+      const distM = place.distance ? parseInt(place.distance) : 0;
+      const distTxt = distM>=1000?(distM/1000).toFixed(1)+'km':distM+'m';
+      const item = document.createElement('div');
+      item.className='map-place-item';
+      item.innerHTML=`<div><div class="map-place-name">${place.place_name}</div>
+        <div class="map-place-addr">${place.road_address_name||place.address_name||''}</div></div>
+        <div class="map-place-dist">${distTxt}</div>`;
+      item.onclick=()=>{ kakaoMap.setCenter(pos); kakaoMap.setLevel(3); iw.open(kakaoMap,marker); };
+      list.appendChild(item);
+    }
+  });
+  kakaoMap.setBounds(bounds);
+  document.getElementById('map-section').style.display = 'block';
 }
  
 function searchNearby() {
@@ -2048,6 +2560,26 @@ function getDistance(lat1, lng1, lat2, lng2) {
 function renderResultScreen(result) {
   const m = result.main;
   currentMenuName = m.name;
+ 
+  // 위치 기반 변경 알림 배지
+  const locBadge = document.getElementById('loc-change-badge');
+  if(locBadge) {
+    if(result.locationChanged) {
+      locBadge.style.display = 'block';
+      locBadge.innerHTML = `📍 <b>${result.radiusLabel}</b> 내 "<b>${result.originalMenu}</b>" 식당이 없어서 변경됐어요`;
+    } else if(result.locationVerified) {
+      locBadge.style.display = 'block';
+      locBadge.innerHTML = `✅ <b>${result.radiusLabel}</b> 내에 식당이 있어요!`;
+      locBadge.style.background = '#F0FFF4';
+      locBadge.style.color = '#28A745';
+    } else {
+      locBadge.style.display = 'none';
+    }
+  }
+  // nearbyPlaces가 있으면 지도에 전달
+  if(result.nearbyPlaces) {
+    window._nearbyPlaces = result.nearbyPlaces;
+  }
   document.getElementById('r-emoji').textContent = m.emoji;
   document.getElementById('r-name').textContent = m.name;
   document.getElementById('r-category').textContent = m.cat+(m.sub?` · ${m.sub}`:'');
@@ -2099,29 +2631,231 @@ function swapMain(idx) {
 function decideMenu() {
   const main = state.currentResult?.main;
   if(!main) return;
-  // 시간 기반 식사 타입 자동 결정
+  // 식사 기록 저장
   const mealType = autoMealType();
   const mealTypeLabel = {breakfast:'아침',lunch:'점심',dinner:'저녁',late_night:'야식'}[mealType];
-  // 자동으로 식사 기록 저장
-  const newMeal = {
-    id: Date.now(),
-    name: main.name,
-    cat: main.cat,
-    date: todayStr(),
-    type: mealType,
-    sat: null,  // 나중에 평가
-    emoji: main.emoji || '🍽️',
-  };
+  const newMeal = { id:Date.now(), name:main.name, cat:main.cat,
+    date:todayStr(), type:mealType, sat:null, emoji:main.emoji||'🍽️' };
   state.meals.unshift(newMeal);
   saveState();
-  showToast(`${mealTypeLabel} 기록에 "${main.name}" 추가됐어요! 🎉`);
-  setTimeout(()=>{
-    screenStack.length=0;
-    showScreen('home-screen',false);
-    switchTab('home');
-    // 기록 탭으로 자동 이동해서 평가 유도
-    setTimeout(()=>switchTab('rec'), 1200);
-  }, 800);
+  showToast(`"${main.name}" 결정! 주변 식당 찾는 중... 🗺️`);
+  // 지도 화면으로 이동
+  openMapScreen(main.name);
+}
+ 
+// ── 지도 화면 열기 ─────────────────────────────────
+ 
+ 
+function openMapScreen(menuName) {
+  mapMenuName = menuName;
+  mapRadiusIdx = state.prefs.radiusIdx || 2;
+ 
+  // 반경 슬라이더 초기화
+  const slider = document.getElementById('map-radius-slider');
+  const label  = document.getElementById('map-radius-label');
+  if(slider) slider.value = mapRadiusIdx;
+  if(label)  label.textContent = RADIUS_LABS[mapRadiusIdx];
+ 
+  document.getElementById('map-screen-title').textContent = `"${menuName}" 주변 식당`;
+  document.getElementById('map-screen-sub').textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
+  document.getElementById('map-loading').style.display = 'block';
+  document.getElementById('map-loading-text').textContent = '위치 확인 중...';
+  document.getElementById('map-place-list').innerHTML = '';
+ 
+  showScreen('map-screen');
+ 
+  // 카카오맵 초기화 후 탐색
+  setTimeout(()=> initMainMap(()=> searchPlaces(menuName, mapRadiusIdx)), 300);
+}
+ 
+function onMapRadiusChange(val) {
+  mapRadiusIdx = parseInt(val);
+  document.getElementById('map-radius-label').textContent = RADIUS_LABS[mapRadiusIdx];
+}
+ 
+function reSearchMap() {
+  document.getElementById('map-loading').style.display = 'block';
+  document.getElementById('map-loading-text').textContent = '재탐색 중...';
+  document.getElementById('map-place-list').innerHTML = '';
+  document.getElementById('map-screen-sub').textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
+  // 반경 설정 저장
+  state.prefs.radiusIdx = mapRadiusIdx;
+  saveState();
+  searchPlaces(mapMenuName, mapRadiusIdx);
+}
+ 
+function initMainMap(callback) {
+  const container = document.getElementById('main-kakao-map');
+  if(!container) return;
+ 
+  // 이미 초기화됐으면 재사용
+  if(mapObject) { if(callback) callback(); return; }
+ 
+  function tryCreate() {
+    if(typeof kakao === 'undefined' || !kakao.maps) return false;
+    try {
+      mapObject = new kakao.maps.Map(container, {
+        center: new kakao.maps.LatLng(37.5665, 126.9780),
+        level: 4
+      });
+      setTimeout(()=>{ kakao.maps.event.trigger(mapObject,'resize'); }, 100);
+      if(callback) callback();
+      return true;
+    } catch(e) { console.log('지도 오류:', e); return false; }
+  }
+ 
+  if(!tryCreate()) {
+    let t = 0;
+    const iv = setInterval(()=>{
+      t++;
+      if(tryCreate() || t > 20) clearInterval(iv);
+    }, 400);
+  }
+}
+ 
+function searchPlaces(menuName, radiusIdx) {
+  const radius = RADIUS_VALS[radiusIdx];
+ 
+  if(!navigator.geolocation) {
+    showMapError('위치 서비스를 사용할 수 없어요.');
+    return;
+  }
+ 
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+ 
+    document.getElementById('map-loading-text').textContent = '식당 검색 중...';
+ 
+    if(typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.services) {
+      showMapError('카카오맵을 불러올 수 없어요. 도메인 등록을 확인해주세요.'); return;
+    }
+ 
+    // 지도 중심 이동
+    const myPos = new kakao.maps.LatLng(lat, lng);
+    mapObject.setCenter(myPos);
+ 
+    // 내 위치 마커
+    new kakao.maps.Marker({
+      map: mapObject,
+      position: myPos,
+      title: '내 위치',
+      image: new kakao.maps.MarkerImage(
+        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+        new kakao.maps.Size(24,35)
+      )
+    });
+ 
+    // 반경 원 표시
+    new kakao.maps.Circle({
+      map: mapObject,
+      center: myPos,
+      radius: radius,
+      strokeWeight: 2,
+      strokeColor: '#FF6B35',
+      strokeOpacity: 0.6,
+      fillColor: '#FF6B35',
+      fillOpacity: 0.05,
+    });
+ 
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(menuName, (data, status) => {
+      document.getElementById('map-loading').style.display = 'none';
+ 
+      if(status !== kakao.maps.services.Status.OK || !data.length) {
+        showMapEmpty(menuName, radius);
+        return;
+      }
+ 
+      renderMapResults(data, lat, lng);
+    }, {
+      location: myPos,
+      radius: radius,
+      sort: kakao.maps.services.SortBy.DISTANCE
+    });
+ 
+  }, err => {
+    showMapError('위치 권한을 허용해주세요.');
+  }, { timeout:8000, maximumAge:60000 });
+}
+ 
+function renderMapResults(places, myLat, myLng) {
+  const bounds = new kakao.maps.LatLngBounds();
+  const list   = document.getElementById('map-place-list');
+  list.innerHTML = '';
+ 
+  // 상단 요약
+  const summary = document.createElement('div');
+  summary.style.cssText = 'padding:12px 16px;background:var(--primary-bg);border-bottom:1px solid var(--border);';
+  summary.innerHTML = `<span style="font-size:13px;font-weight:700;color:var(--primary);">📍 ${places.length}곳 발견</span>
+    <span style="font-size:12px;color:var(--text2);margin-left:6px;">가까운 순으로 정렬</span>`;
+  list.appendChild(summary);
+ 
+  places.forEach((place, i) => {
+    const pos = new kakao.maps.LatLng(place.y, place.x);
+    bounds.extend(pos);
+ 
+    // 마커
+    const marker = new kakao.maps.Marker({ map:mapObject, position:pos, title:place.place_name });
+    const iw = new kakao.maps.InfoWindow({
+      content:`<div style="padding:6px 10px;font-size:13px;font-weight:700;white-space:nowrap;border-radius:8px;">${i+1}. ${place.place_name}</div>`
+    });
+    kakao.maps.event.addListener(marker,'click',()=>iw.open(mapObject,marker));
+ 
+    // 거리
+    const distM  = place.distance ? parseInt(place.distance) : calcDist(myLat,myLng,place.y,place.x);
+    const distTxt = distM>=1000 ? (distM/1000).toFixed(1)+'km' : distM+'m';
+ 
+    // 리스트 아이템
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;';
+    item.innerHTML = `
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0;">${i+1}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${place.place_name}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${place.road_address_name||place.address_name||''}</div>
+        ${place.phone ? `<div style="font-size:11px;color:var(--text3);margin-top:1px;">📞 ${place.phone}</div>` : ''}
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:15px;font-weight:900;color:var(--primary);">${distTxt}</div>
+        <a href="${place.place_url}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--text3);text-decoration:none;">지도앱 →</a>
+      </div>`;
+    item.onclick = ()=>{ mapObject.setCenter(pos); mapObject.setLevel(3); iw.open(mapObject,marker); };
+    list.appendChild(item);
+  });
+ 
+  // 지도 범위 조정
+  if(places.length > 0) mapObject.setBounds(bounds);
+ 
+  // 제목 업데이트
+  document.getElementById('map-screen-sub').textContent =
+    `${RADIUS_LABS[mapRadiusIdx]} 이내 ${places.length}곳`;
+}
+ 
+function showMapEmpty(menuName, radius) {
+  const radiusText = radius >= 1000 ? radius/1000+'km' : radius+'m';
+  document.getElementById('map-screen-sub').textContent = '주변에 없어요';
+  const list = document.getElementById('map-place-list');
+  list.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:10px;text-align:center;">
+    <div style="font-size:48px;">😢</div>
+    <div style="font-size:16px;font-weight:700;">${radiusText} 내에 "${menuName}" 식당이 없어요</div>
+    <div style="font-size:13px;color:var(--text2);">반경을 넓혀서 다시 탐색해보세요</div>
+  </div>`;
+}
+ 
+function showMapError(msg) {
+  document.getElementById('map-loading').style.display = 'none';
+  const list = document.getElementById('map-place-list');
+  list.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:10px;text-align:center;">
+    <div style="font-size:48px;">📍</div>
+    <div style="font-size:15px;font-weight:700;color:var(--text);">${msg}</div>
+  </div>`;
+}
+ 
+function calcDist(lat1,lng1,lat2,lng2) {
+  const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
 }
  
 function giveFeedback(rating) {
@@ -2437,6 +3171,9 @@ function syncPrefScreen() {
   });
   // 다이어트
   document.getElementById('pref-diet-toggle').checked = state.prefs.diet;
+  const ri = state.prefs.radiusIdx !== undefined ? state.prefs.radiusIdx : 2;
+  const rs = document.getElementById('radius-slider');
+  if(rs) { rs.value = ri; updateRadiusLabel(ri); }
   // 금기
   document.querySelectorAll('#pref-exclude-grid .exclude-chip').forEach(chip=>{
     chip.classList.toggle('active', state.prefs.excluded.includes(chip.textContent.trim()));
@@ -2469,6 +3206,7 @@ function prefToggleExclude(el) {
   }
 }
 function savePreferences() {
+  state.prefs.radiusIdx = parseInt(document.getElementById('radius-slider').value);
   saveState();
   showToast('취향이 저장됐어요! 더 정확하게 추천해드릴게요 ✓');
   vibrate();
