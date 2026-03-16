@@ -1284,6 +1284,19 @@ function scoreMenu(m, ctx, answers) {
   if(ctx.hangover) ctx_score += m[p.hangover]*2.5;
   if(answers.solo===true) ctx_score += m[p.solo]*1.5;
   else if(answers.solo===false) ctx_score += m[p.group]*1.5;
+ 
+  // 특수 상황 점수
+  if(answers.latenight_type==='delivery') ctx_score += m[p.delivery]*2;
+  if(answers.latenight_type==='noodle') ctx_score += m[p.soupy]*2;
+  if(answers.hangover_pref==='soft') ctx_score += m[p.soft]*3+(6-m[p.cal])*2;
+  if(answers.date_mood==='romantic') ctx_score += m[p.price]*1.5+m[p.group]*1.5;
+  if(answers.date_mood==='exotic') ctx_score += (6-m[p.popular])*1.5;
+  if(answers.diet_type==='protein') ctx_score += m[p.protein]*4;
+  if(answers.diet_type==='low_cal') ctx_score += (6-m[p.cal])*4+m[p.veg]*2;
+  if(answers.diet_type==='low_carb') ctx_score += (6-m[p.carb])*4;
+  if(answers.rainy_mood==='cafe') ctx_score += (6-m[p.soupy])*2;
+  if(answers.hot_pref==='cold_soup') ctx_score += m[p.hot]*3;
+  if(answers.hot_pref==='light') ctx_score += m[p.light]*3+(6-m[p.cal])*2;
   if(state.prefs.diet) ctx_score += m[p.diet]*2.0 - m[p.cal]*1.5;
   score += ctx_score * 0.40;
  
@@ -1310,11 +1323,12 @@ function scoreMenu(m, ctx, answers) {
       healthy: m[p.diet]*3+m[p.veg]*2,
       hearty: m[p.full]*3+m[p.protein]*2,
       anything: m[p.popular]*2,
-      happy:   m[p.popular]*2+m[p.comfort]*2,
-      tired:   m[p.comfort]*4+m[p.soupy]*3,
-      sad:     m[p.comfort]*5+m[p.soft]*2,
-      stress:  m[p.stim]*3+m[p.spicy]*2+m[p.comfort]*2,
-      cold:    m[p.cold]*4+m[p.soupy]*4,
+      happy:   m[p.popular]*4+m[p.group]*3+m[p.comfort]*2,
+      tired:   m[p.comfort]*6+m[p.soupy]*4+m[p.soft]*3,
+      sad:     m[p.comfort]*7+m[p.soft]*4+m[p.sweet]*2+m[p.soupy]*2,
+      stress:  m[p.stim]*6+m[p.spicy]*5+m[p.full]*2,
+      cold:    m[p.cold]*6+m[p.soupy]*6+m[p.comfort]*3,
+      anything:m[p.popular]*4,
     };
     taste += em[answers.emotion]||0;
   }
@@ -1590,7 +1604,32 @@ function dismissFate() { document.getElementById('fate-section').style.display='
 function acceptFate() { goQuick(); }
  
 function goQuick() { startQuick({}); }
-function goQuickEmotion(emotion) { startQuick({emotion}); }
+function goQuickEmotion(emotion) {
+  // 감정 선택 시 질문 없이 바로 추천
+  showLoading();
+  setTimeout(()=>{
+    const emotionDefaults = {
+      happy:   {emotion:'happy',   hungry:'medium', spicy:'any',   soup:null},
+      tired:   {emotion:'tired',   hungry:'medium', spicy:'mild',  soup:true},
+      sad:     {emotion:'sad',     hungry:'medium', spicy:'mild',  soup:null},
+      stress:  {emotion:'stress',  hungry:'medium', spicy:'spicy', soup:null},
+      cold:    {emotion:'cold',    hungry:'heavy',  spicy:'any',   soup:true},
+      anything:{emotion:'anything',hungry:'medium', spicy:'any',   soup:null},
+    };
+    const answers = emotionDefaults[emotion] || {emotion};
+    const result = runRecommend(answers);
+    hideLoading();
+    if(!result){ showToast('잠시 후 다시 시도해주세요.'); return; }
+    state.currentResult = result;
+    state.currentAnswers = answers;
+    state.history.unshift({ name:result.main.name, emoji:result.main.emoji,
+      date:new Date().toLocaleDateString('ko-KR',{month:'short',day:'numeric'}) });
+    state.history = state.history.slice(0,20);
+    saveState();
+    renderResultScreen(result);
+    showScreen('result-screen');
+  }, 800);
+}
  
  
 // ════════════════════════════════════════════════════════════════
@@ -1646,18 +1685,108 @@ function goTournament() {
 // ════════════════════════════════════════════════════════════════
 // 빠른 추천 질문
 // ════════════════════════════════════════════════════════════════
-const QUESTIONS = [
-  { id:'solo', text:'지금 혼자 드세요?', sub:'함께하는 분에 따라 추천이 달라져요',
+// ════════════════════════════════════════════════════════════════
+// 질문 풀 (상황에 따라 조합)
+// ════════════════════════════════════════════════════════════════
+const Q_POOL = {
+  solo: { id:'solo', text:'지금 혼자 드세요?', sub:'함께하는 분에 따라 추천이 달라져요',
     opts:[{e:'🧍',l:'혼자서',d:'혼밥 최적화',v:true},{e:'👫',l:'둘이서',d:'2인 메뉴',v:false},{e:'👥',l:'셋 이상',d:'단체 메뉴',v:false}]},
-  { id:'hungry', text:'얼마나 배고프세요?', sub:'배고픔 정도로 양을 맞춰드려요',
+ 
+  hungry: { id:'hungry', text:'얼마나 배고프세요?', sub:'배고픔 정도로 양을 맞춰드려요',
     opts:[{e:'🥗',l:'간단히',d:'가볍고 부담 없게',v:'light'},{e:'🍱',l:'적당히',d:'딱 알맞은 한 끼',v:'medium'},{e:'🍖',l:'든든하게',d:'배부르게',v:'heavy'}]},
-  { id:'soup', text:'국물이 당기나요?', sub:'기분에 따라 골라보세요',
-    opts:[{e:'🍲',l:'국물 있으면 좋겠어',d:'찌개·탕·국밥',v:true},{e:'🍳',l:'없어도 괜찮아',d:'볶음·구이·면',v:false},{e:'🤷',l:'상관없어',d:'뭐든 OK',v:null}], skip:true},
-  { id:'spicy', text:'매운 건 어때요?', sub:'오늘의 자극 강도를 선택해주세요',
-    opts:[{e:'🌶️',l:'매운 거',d:'얼큰·자극적',v:'spicy'},{e:'😌',l:'순한 거',d:'담백·순한 맛',v:'mild'},{e:'🆗',l:'상관없어',d:'맵든 안 맵든',v:'any'}], skip:true},
-  { id:'budget', text:'예산은요?', sub:'가격대에 맞춰 추천드려요',
-    opts:[{e:'💰',l:'1만원 이하',d:'가성비 한 끼',v:1},{e:'💳',l:'1~2만원',d:'적당한 가격',v:2},{e:'✨',l:'상관없어',d:'제한 없음',v:3}], skip:true},
-];
+ 
+  soup: { id:'soup', text:'국물이 당기나요?', sub:'기분에 따라 골라보세요', skip:true,
+    opts:[{e:'🍲',l:'국물 있으면 좋겠어',d:'찌개·탕·국밥',v:true},{e:'🍳',l:'없어도 괜찮아',d:'볶음·구이·면',v:false},{e:'🤷',l:'상관없어',d:'뭐든 OK',v:null}]},
+ 
+  spicy: { id:'spicy', text:'매운 건 어때요?', sub:'오늘의 자극 강도를 선택해주세요', skip:true,
+    opts:[{e:'🌶️',l:'매운 거',d:'얼큰·자극적',v:'spicy'},{e:'😌',l:'순한 거',d:'담백·순한 맛',v:'mild'},{e:'🆗',l:'상관없어',d:'맵든 안 맵든',v:'any'}]},
+ 
+  budget: { id:'budget', text:'예산은요?', sub:'가격대에 맞춰 추천드려요', skip:true,
+    opts:[{e:'💰',l:'1만원 이하',d:'가성비 한 끼',v:1},{e:'💳',l:'1~2만원',d:'적당한 가격',v:2},{e:'✨',l:'상관없어',d:'제한 없음',v:3}]},
+ 
+  // 상황별 특수 질문
+  latenight_type: { id:'latenight_type', text:'야식으로 뭐가 당겨요?', sub:'야식 스타일을 골라보세요', skip:false,
+    opts:[{e:'🍗',l:'치킨·피자',d:'배달 야식의 정석',v:'delivery'},{e:'🍜',l:'라면·국물',d:'따끈하게 한 그릇',v:'noodle'},{e:'🥟',l:'분식',d:'떡볶이·순대·튀김',v:'snack'},{e:'🤷',l:'상관없어',d:'아무거나',v:'any'}]},
+ 
+  hangover_pref: { id:'hangover_pref', text:'해장 스타일은요?', sub:'속 상태에 맞게 추천해드려요', skip:false,
+    opts:[{e:'🍲',l:'뜨끈한 국물',d:'해장국·북어국·콩나물',v:'soup'},{e:'🥢',l:'자극적으로',d:'매운 음식으로 확 깨기',v:'spicy'},{e:'🥣',l:'속 편하게',d:'죽·부드러운 음식',v:'soft'}]},
+ 
+  date_mood: { id:'date_mood', text:'데이트 분위기는요?', sub:'분위기에 맞게 추천해드려요', skip:false,
+    opts:[{e:'🕯️',l:'분위기 있게',d:'레스토랑·코스요리',v:'romantic'},{e:'😊',l:'편하고 즐겁게',d:'맛집·대중적인 곳',v:'casual'},{e:'🌏',l:'색다르게',d:'이색 요리·새로운 경험',v:'exotic'}]},
+ 
+  business_size: { id:'business_size', text:'몇 명이서 하시나요?', sub:'인원에 맞는 메뉴 추천', skip:false,
+    opts:[{e:'👥',l:'3~5명',d:'소규모 회식',v:'small'},{e:'👨‍👩‍👧‍👦',l:'6~10명',d:'중간 규모',v:'medium'},{e:'🏢',l:'10명 이상',d:'대규모 단체',v:'large'}]},
+ 
+  diet_type: { id:'diet_type', text:'다이어트 방식은요?', sub:'목적에 맞게 추천해드려요', skip:false,
+    opts:[{e:'🥗',l:'저칼로리',d:'가볍고 건강하게',v:'low_cal'},{e:'💪',l:'고단백',d:'닭가슴살·단백질 위주',v:'protein'},{e:'🌾',l:'저탄수',d:'탄수화물 줄이기',v:'low_carb'}]},
+ 
+  rainy_mood: { id:'rainy_mood', text:'비 오는 날 기분은요?', sub:'날씨 맞춤 추천', skip:false,
+    opts:[{e:'🍲',l:'따끈한 국물',d:'찌개·탕·라면',v:'warm'},{e:'🥞',l:'카페 감성',d:'브런치·파스타',v:'cafe'},{e:'🍺',l:'한 잔 곁들여',d:'파전·두부김치',v:'snack'}]},
+ 
+  hot_pref: { id:'hot_pref', text:'더운 날 어떤 스타일?', sub:'시원하게 해결해드려요', skip:false,
+    opts:[{e:'🍜',l:'시원한 국물',d:'냉면·콩국수·냉소바',v:'cold_soup'},{e:'🥗',l:'가볍게',d:'샐러드·포케',v:'light'},{e:'❄️',l:'아무거나 시원하게',d:'상관없어',v:'any'}]},
+};
+ 
+// ── 적응형 질문 생성 ──────────────────────────────────────────
+function buildQuestions(initialAnswers) {
+  const sit = initialAnswers.situation;
+  const qs = [];
+ 
+  // 상황별 질문 구성
+  if(sit === 'latenight') {
+    // 야식: 야식 타입 → 맵기 → 예산
+    qs.push(Q_POOL.latenight_type);
+    qs.push(Q_POOL.spicy);
+    qs.push(Q_POOL.budget);
+ 
+  } else if(sit === 'hangover') {
+    // 해장: 해장 스타일 → 맵기 → 예산
+    qs.push(Q_POOL.hangover_pref);
+    qs.push(Q_POOL.spicy);
+    qs.push(Q_POOL.budget);
+ 
+  } else if(sit === 'date') {
+    // 데이트: 분위기 → 예산
+    qs.push(Q_POOL.date_mood);
+    qs.push(Q_POOL.budget);
+ 
+  } else if(sit === 'business') {
+    // 회식: 인원 → 예산 → 맵기
+    qs.push(Q_POOL.business_size);
+    qs.push(Q_POOL.spicy);
+    qs.push(Q_POOL.budget);
+ 
+  } else if(sit === 'diet') {
+    // 다이어트: 다이어트 타입 → 예산
+    qs.push(Q_POOL.diet_type);
+    qs.push(Q_POOL.budget);
+ 
+  } else if(sit === 'rainy') {
+    // 비오는날: 기분 → 맵기 → 예산
+    qs.push(Q_POOL.rainy_mood);
+    qs.push(Q_POOL.spicy);
+    qs.push(Q_POOL.budget);
+ 
+  } else if(sit === 'hot') {
+    // 더운날: 선호 스타일 → 예산
+    qs.push(Q_POOL.hot_pref);
+    qs.push(Q_POOL.budget);
+ 
+  } else {
+    // 기본 흐름 (카테고리 선택, CTA 버튼)
+    // solo가 이미 설정됐으면 스킵
+    if(initialAnswers.solo === undefined) qs.push(Q_POOL.solo);
+    qs.push(Q_POOL.hungry);
+    qs.push(Q_POOL.soup);
+    qs.push(Q_POOL.spicy);
+    qs.push(Q_POOL.budget);
+  }
+ 
+  return qs;
+}
+ 
+// 동적 QUESTIONS (startQuick에서 설정)
+let QUESTIONS = [];
  
 let qStep = 0;
 let qAnswers = {};
@@ -1665,6 +1794,7 @@ let qAnswers = {};
 function startQuick(initialAnswers) {
   qStep = 0;
   qAnswers = Object.assign({}, initialAnswers);
+  QUESTIONS = buildQuestions(initialAnswers);  // 적응형 질문 생성
   renderQuestion();
   showScreen('quick-screen');
 }
@@ -1674,7 +1804,13 @@ function renderQuestion() {
   const pct = ((qStep+1)/QUESTIONS.length*100)+'%';
   document.getElementById('q-progress').style.width = pct;
   document.getElementById('q-label').textContent = `${qStep+1} / ${QUESTIONS.length}`;
-  document.getElementById('q-tag').textContent = `Q${qStep+1}`;
+  // 상황 컨텍스트 배지
+  const sitBadge = {
+    latenight:'🌙 야식',hangover:'🥴 해장',diet:'🥦 다이어트',
+    date:'💑 데이트',business:'💼 회식',rainy:'☔ 비오는날',hot:'☀️ 더운날'
+  };
+  const badge = sitBadge[qAnswers.situation] || '🍽️ 메뉴 추천';
+  document.getElementById('q-tag').textContent = badge;
   document.getElementById('q-text').textContent = q.text;
   document.getElementById('q-sub').textContent = q.sub||'';
   document.getElementById('skip-btn').style.display = q.skip?'block':'none';
@@ -1694,7 +1830,52 @@ function renderQuestion() {
  
 function selectOptIdx(idx) {
   const q = QUESTIONS[qStep];
-  selectOpt(q.opts[idx].v);
+  const val = q.opts[idx].v;
+ 
+  // 특수 질문 답변 → 실제 추천 파라미터로 변환
+  if(q.id === 'latenight_type') {
+    const map = {delivery:{soup:false,spicy:'any'},noodle:{soup:true,spicy:'any'},snack:{soup:false,spicy:'any'},any:{}};
+    Object.assign(qAnswers, map[val]||{});
+    qAnswers.latenight_type = val;
+    selectOpt(val); return;
+  }
+  if(q.id === 'hangover_pref') {
+    const map = {soup:{soup:true,spicy:'mild'},spicy:{soup:true,spicy:'spicy'},soft:{soup:false,hungry:'light'}};
+    Object.assign(qAnswers, map[val]||{});
+    qAnswers.hangover_pref = val;
+    selectOpt(val); return;
+  }
+  if(q.id === 'date_mood') {
+    const map = {romantic:{budget:3,hungry:'medium'},casual:{hungry:'medium'},exotic:{spicy:'any'}};
+    Object.assign(qAnswers, map[val]||{});
+    qAnswers.date_mood = val;
+    selectOpt(val); return;
+  }
+  if(q.id === 'business_size') {
+    qAnswers.solo = false;
+    qAnswers.business_size = val;
+    selectOpt(val); return;
+  }
+  if(q.id === 'diet_type') {
+    const map = {low_cal:{hungry:'light'},protein:{hungry:'medium'},low_carb:{hungry:'medium'}};
+    Object.assign(qAnswers, map[val]||{});
+    qAnswers.diet_type = val;
+    selectOpt(val); return;
+  }
+  if(q.id === 'rainy_mood') {
+    const map = {warm:{soup:true,spicy:'any'},cafe:{soup:false},snack:{soup:false}};
+    Object.assign(qAnswers, map[val]||{});
+    qAnswers.rainy_mood = val;
+    selectOpt(val); return;
+  }
+  if(q.id === 'hot_pref') {
+    const map = {cold_soup:{soup:true,spicy:'mild'},light:{soup:false,hungry:'light'},any:{}};
+    Object.assign(qAnswers, map[val]||{});
+    qAnswers.hot_pref = val;
+    selectOpt(val); return;
+  }
+ 
+  selectOpt(val);
 }
  
 function selectOpt(val) {
