@@ -2112,49 +2112,38 @@ function openMapScreen(menuName) {
  
 function initMainMap(callback) {
   const container = document.getElementById('main-kakao-map');
-  const listEl = document.getElementById('map-place-list');
   if(!container) return;
  
-  // 이미 지도 있으면 resize만 하고 바로 callback
+  // 이미 지도 있으면 relayout 후 바로 callback
   if(mapObject) {
-    setTimeout(function(){
-      try{ mapObject.relayout(); }catch(e){}
-      if(callback) callback();
-    }, 100);
+    try { mapObject.relayout(); } catch(e){}
+    setTimeout(function(){ if(callback) callback(); }, 100);
     return;
   }
  
-  // kakao SDK 로드 대기
-  let attempts = 0;
-  function tryInit() {
-    attempts++;
-    // kakao, kakao.maps, kakao.maps.Map 모두 체크
-    if(typeof kakao !== 'undefined' && kakao.maps && kakao.maps.Map) {
-      try {
-        mapObject = new kakao.maps.Map(container, {
-          center: new kakao.maps.LatLng(35.1796, 129.0756),
-          level: 5
-        });
-        // relayout으로 지도 크기 정상화 (핵심!)
-        setTimeout(function(){
-          mapObject.relayout();
-          if(callback) callback();
-        }, 200);
-      } catch(e) {
-        if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;color:red;">지도 생성 오류: '+e.message+'</div>';
-      }
-      return;
-    }
-    if(attempts > 20) {
-      if(listEl) listEl.innerHTML = '<div style="padding:20px;text-align:center;">❌ 카카오 SDK 로딩 실패<br><br>'+
-        '페이지를 강력새로고침(Ctrl+Shift+R) 후 다시 시도해주세요<br><br>'+
-        '도메인 등록 확인: developers.kakao.com<br>JS SDK 도메인 → <b>https://pktop86.github.io</b>' +
-        '</div>';
-      return;
-    }
-    setTimeout(tryInit, 300);
+  // kakao.maps.load() - SDK 준비 완료 후 실행되는 공식 콜백
+  if(typeof kakao === 'undefined') {
+    document.getElementById('map-place-list').innerHTML =
+      '<div style="padding:30px;text-align:center;">❌ 카카오 SDK 없음<br><small>페이지 새로고침 해주세요</small></div>';
+    return;
   }
-  tryInit();
+ 
+  kakao.maps.load(function() {
+    try {
+      mapObject = new kakao.maps.Map(container, {
+        center: new kakao.maps.LatLng(35.1796, 129.0756),
+        level: 5
+      });
+      // 지도 깨짐 방지 - display:none 후 표시될 때 크기 재계산
+      setTimeout(function(){
+        mapObject.relayout();
+        if(callback) callback();
+      }, 200);
+    } catch(e) {
+      document.getElementById('map-place-list').innerHTML =
+        '<div style="padding:30px;text-align:center;">❌ 지도 생성 오류: '+e.message+'</div>';
+    }
+  });
 }
  
 function onMapRadiusChange(val) {
@@ -2214,8 +2203,10 @@ function doSearchPlaces(menuName, radiusIdx) {
     }
  
     // services 라이브러리 체크
+    // kakao.maps.load() 후에는 services 반드시 존재
     if(!kakao.maps.services) {
-      setStatus('❌ kakao.maps.services 없음<br><br>카카오 개발자 콘솔 → 플랫폼 키 → JS SDK 도메인 확인<br><b>https://pktop86.github.io</b><br><br>저장 버튼을 눌렀는지 확인해주세요!');
+      setStatus('⚠️ services 로딩 중... 재시도');
+      setTimeout(function(){ doSearchPlaces(menuName, radiusIdx); }, 500);
       return;
     }
  
