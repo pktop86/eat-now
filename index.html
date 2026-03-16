@@ -601,6 +601,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       <div style="font-size:16px;font-weight:900;" id="map-screen-title">주변 식당 찾기</div>
       <div style="font-size:11px;color:var(--text2);margin-top:1px;" id="map-screen-sub">탐색 중...</div>
     </div>
+    <button onclick="goMapHome()" style="background:none;border:none;font-size:13px;font-weight:700;color:var(--primary);cursor:pointer;padding:8px;">🏠 홈</button>
   </div>
   <!-- 반경 설정 -->
   <div style="padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;">
@@ -776,6 +777,9 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   </button>
   <button class="tab-item" id="tab-record" onclick="switchTab('record')">
     <span class="tab-icon">📅</span><span>기록</span>
+  </button>
+  <button class="tab-item" id="tab-map" onclick="switchTab('map')">
+    <span class="tab-icon">🗺️</span><span>지도</span>
   </button>
   <button class="tab-item" id="tab-pref" onclick="switchTab('pref')">
     <span class="tab-icon">👤</span><span>취향</span>
@@ -1489,7 +1493,7 @@ function showScreen(id, push=true) {
  
   if(push && state.currentScreen !== id) screenStack.push(state.currentScreen);
  
-  const isTab = ['home-screen','record-screen','pref-screen'].includes(id);
+  const isTab = ['home-screen','record-screen','pref-screen','map-screen'].includes(id);
   const tabBar = document.getElementById('tab-bar');
  
   all.forEach(s=>{
@@ -1510,15 +1514,32 @@ function goBack() {
 }
  
 function switchTab(tab) {
-  const map = {home:'home-screen', record:'record-screen', pref:'pref-screen'};
-  ['tab-home','tab-record','tab-pref'].forEach(t=>{
+  const map = {home:'home-screen', record:'record-screen', pref:'pref-screen', map:'map-screen'};
+  ['tab-home','tab-record','tab-map','tab-pref'].forEach(t=>{
     document.getElementById(t)?.classList.remove('active');
   });
   document.getElementById('tab-'+tab)?.classList.add('active');
   screenStack.length = 0;
   if(tab==='record') renderRecordScreen();
   if(tab==='pref') syncPrefScreen();
+  if(tab==='map') {
+    // 마지막 결정 메뉴로 지도 열기 (없으면 최근 식사 기록)
+    const menuName = (state.currentResult?.main?.name) || (state.meals[0]?.name) || '';
+    if(menuName) openMapScreen(menuName);
+    else showScreen('map-screen', false);
+    return;
+  }
   showScreen(map[tab], false);
+  // 지도 탭은 탭바 숨기지 않음
+  if(tab !== 'map') {
+    const tabBar = document.getElementById('tab-bar');
+    if(tabBar) tabBar.style.display = 'flex';
+  }
+}
+ 
+function goMapHome() {
+  screenStack.length = 0;
+  switchTab('home');
 }
  
 // ════════════════════════════════════════════════════════════════
@@ -2032,15 +2053,22 @@ function swapMain(idx) {
  
 function decideMenu() {
   const main = state.currentResult?.main;
-  if(!main) return;
+  if(!main) { showToast('추천 결과가 없어요.'); return; }
   const mealType = autoMealType();
   const mealTypeLabel = {breakfast:'아침',lunch:'점심',dinner:'저녁',late_night:'야식'}[mealType];
-  const newMeal = { id:Date.now(), name:main.name, cat:main.cat,
-    date:todayStr(), type:mealType, sat:null, emoji:main.emoji||'🍽️' };
+  const newMeal = {
+    id: Date.now(),
+    name: main.name,
+    cat: main.cat,
+    date: todayStr(),
+    type: mealType,
+    sat: null,
+    emoji: main.emoji||'🍽️'
+  };
   state.meals.unshift(newMeal);
   saveState();
-  showToast('"'+main.name+'" 결정! 🎉');
-  setTimeout(function(){ openMapScreen(main.name); }, 500);
+  showToast(mealTypeLabel+' 기록 저장! 주변 식당 찾는 중 🗺️');
+  setTimeout(function(){ openMapScreen(main.name); }, 600);
 }
  
 // ── 지도 화면 ─────────────────────────────────────
@@ -2051,33 +2079,37 @@ const RADIUS_VALS = [300,500,1000,2000,5000];
 const RADIUS_LABS = ['300m','500m','1km','2km','5km'];
  
 function openMapScreen(menuName) {
-  mapMenuName = menuName;
-  mapRadiusIdx = state.prefs.radiusIdx !== undefined ? state.prefs.radiusIdx : 2;
+  mapMenuName = menuName || mapMenuName || '음식점';
+  mapRadiusIdx = (state.prefs.radiusIdx !== undefined) ? state.prefs.radiusIdx : 2;
  
-  const _title = document.getElementById('map-screen-title');
-  const _sub = document.getElementById('map-screen-sub');
-  const _slider = document.getElementById('map-radius-slider');
-  const _label = document.getElementById('map-radius-label');
-  const _list = document.getElementById('map-place-list');
-  if(_title) _title.textContent = '"'+menuName+'" 주변 식당';
-  if(_sub) _sub.textContent = RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...';
-  if(_slider) _slider.value = mapRadiusIdx;
-  if(_label) _label.textContent = RADIUS_LABS[mapRadiusIdx];
-  if(_list) _list.innerHTML =
-    '<div style="display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:12px;text-align:center;">' +
-    '<div style="width:36px;height:36px;border:3px solid #eee;border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;"></div>' +
-    '<div style="font-size:14px;font-weight:700;color:var(--text2);">위치 확인 중...</div></div>';
+  // UI 세팅
+  const setEl = (id, val, prop='textContent') => { const e=document.getElementById(id); if(e) e[prop]=val; };
+  setEl('map-screen-title', '"'+mapMenuName+'" 주변 식당');
+  setEl('map-screen-sub', RADIUS_LABS[mapRadiusIdx]+' 이내 탐색 중...');
+  const sl = document.getElementById('map-radius-slider');
+  if(sl) sl.value = mapRadiusIdx;
+  setEl('map-radius-label', RADIUS_LABS[mapRadiusIdx]);
+  setEl('map-place-list', '<div style="padding:30px 16px;text-align:center;color:var(--text2);font-size:14px;">📍 위치 확인 중...<br><br><small>위치 권한을 허용해주세요</small></div>', 'innerHTML');
  
-  try {
-    showScreen('map-screen');
-  } catch(e) {
-    console.error('showScreen map-screen error:', e);
-  }
+  showScreen('map-screen');
  
-  // 카카오맵 초기화 후 탐색
+  // 탭 활성화
+  ['tab-home','tab-record','tab-map','tab-pref'].forEach(t=>{
+    document.getElementById(t)?.classList.remove('active');
+  });
+  document.getElementById('tab-map')?.classList.add('active');
+ 
+  // 지도 먼저 초기화 → 그 다음 위치 탐색
   setTimeout(function(){
-    initMainMap(function(){ doSearchPlaces(menuName, mapRadiusIdx); });
-  }, 400);
+    initMainMap(function(){
+      // 지도 뜨면 바로 서울 중심 표시
+      if(mapObject) {
+        try { kakao.maps.event.trigger(mapObject,'resize'); } catch(e){}
+      }
+      // 위치 탐색 시작
+      doSearchPlaces(mapMenuName, mapRadiusIdx);
+    });
+  }, 300);
 }
  
 function initMainMap(callback) {
@@ -2132,55 +2164,65 @@ function reSearchMap() {
 }
  
 function doSearchPlaces(menuName, radiusIdx) {
-  if(!navigator.geolocation) {
-    setMapMsg('😢','위치 서비스를 사용할 수 없어요.','브라우저 설정에서 위치 권한을 허용해주세요.');
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      const radius = RADIUS_VALS[radiusIdx];
+  const radius = RADIUS_VALS[radiusIdx];
  
-      if(typeof kakao==='undefined'||!kakao.maps||!kakao.maps.services) {
-        setMapMsg('🗺️','카카오맵을 불러올 수 없어요.',
-          'developers.kakao.com에서 도메인 등록을 확인해주세요.<br><b>https://pktop86.github.io</b>');
-        return;
-      }
+  function searchWithCoords(lat, lng, isMyLocation) {
+    if(typeof kakao==='undefined'||!kakao.maps||!kakao.maps.services) {
+      setMapMsg('🗺️','카카오맵 로딩 실패',
+        '<a href="https://developers.kakao.com" target="_blank">카카오 개발자 콘솔</a>에서 도메인을 확인해주세요.<br><b>https://pktop86.github.io</b>');
+      return;
+    }
+    const myLatLng = new kakao.maps.LatLng(lat, lng);
+    mapObject.setCenter(myLatLng);
+    mapObject.setLevel(5);
+    try { kakao.maps.event.trigger(mapObject,'resize'); } catch(e){}
  
-      const myLatLng = new kakao.maps.LatLng(lat,lng);
-      mapObject.setCenter(myLatLng);
- 
-      // 내 위치 마커 (별 모양)
+    if(isMyLocation) {
+      // 내 위치 마커
       new kakao.maps.Marker({
         map:mapObject, position:myLatLng, title:'내 위치',
         image: new kakao.maps.MarkerImage(
           'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
           new kakao.maps.Size(24,35))
       });
- 
       // 반경 원
       new kakao.maps.Circle({
         map:mapObject, center:myLatLng, radius:radius,
         strokeWeight:2, strokeColor:'#FF6B35', strokeOpacity:0.7,
         fillColor:'#FF6B35', fillOpacity:0.06
       });
+    }
  
-      const ps = new kakao.maps.services.Places();
-      ps.keywordSearch(menuName, function(data,status) {
-        if(status!==kakao.maps.services.Status.OK || !data || !data.length) {
-          setMapMsg('😢',
-            RADIUS_LABS[radiusIdx]+' 내에 "'+menuName+'" 식당이 없어요',
-            '반경을 넓혀서 재탐색해보세요');
-          return;
-        }
-        renderPlaces(data, lat, lng);
-      }, { location:myLatLng, radius:radius, sort:kakao.maps.services.SortBy.DISTANCE });
+    document.getElementById('map-place-list').innerHTML =
+      '<div style="padding:20px 16px;text-align:center;color:var(--text2);font-size:13px;">🔍 식당 검색 중...</div>';
+ 
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(menuName, function(data, status) {
+      if(status !== kakao.maps.services.Status.OK || !data || !data.length) {
+        setMapMsg('😢', RADIUS_LABS[radiusIdx]+' 내 "'+menuName+'" 식당 없음', '반경을 넓혀서 재탐색해보세요');
+        return;
+      }
+      renderPlaces(data, lat, lng);
+    }, { location:myLatLng, radius:radius, sort:kakao.maps.services.SortBy.DISTANCE });
+  }
+ 
+  if(!navigator.geolocation) {
+    // 부산 기본 좌표로 fallback
+    searchWithCoords(35.1796, 129.0756, false);
+    return;
+  }
+ 
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      searchWithCoords(pos.coords.latitude, pos.coords.longitude, true);
     },
     function(err) {
-      setMapMsg('📍','위치 권한이 필요해요','주소창 왼쪽 자물쇠 아이콘 → 위치 → 허용');
+      // 위치 권한 거부 → 부산 기본 좌표로 fallback
+      setMapMsg('📍', '위치 권한 없이 탐색 중',
+        '정확한 내 위치 탐색을 원하시면<br>주소창 왼쪽 🔒 → 위치 → 허용 후 재탐색');
+      searchWithCoords(35.1796, 129.0756, false);
     },
-    { timeout:8000, maximumAge:30000 }
+    { timeout:5000, maximumAge:60000 }
   );
 }
  
